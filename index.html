@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#0F172A"/>
+<title>FOIMA CRM</title>
+<style>
+:root{
+  --bg:#F1F5F9;--surface:#FFFFFF;--surface2:#F8FAFC;
+  --border:#E2E8F0;--border2:#CBD5E1;
+  --text:#0F172A;--text2:#475569;--text3:#94A3B8;
+  --primary:#1E40AF;--primary-light:#DBEAFE;--primary-dark:#1E3A8A;
+  --green:#059669;--green-light:#D1FAE5;
+  --amber:#D97706;--amber-light:#FEF3C7;
+  --red:#DC2626;--red-light:#FEE2E2;
+  --purple:#7C3AED;--purple-light:#EDE9FE;
+  --radius:10px;--radius-lg:16px;
+  --shadow:0 1px 3px rgba(0,0,0,.08);--shadow-lg:0 4px 16px rgba(0,0,0,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);font-family:'Segoe UI',system-ui,sans-serif;color:var(--text);font-size:15px}
+button,input,select,textarea{font-family:inherit}
+button{cursor:pointer}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--primary);outline-offset:1px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.spin{animation:spin .7s linear infinite;display:inline-block}
+#shell{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:220px;background:#0F172A;display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+#sidebar.collapsed{width:60px}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0}
+#content{flex:1;overflow-y:auto;padding:20px}
+.sidebar-logo{padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
+.sidebar-logo-mark{width:32px;height:32px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0}
+.sidebar-logo-text{color:#fff;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden}
+.sidebar-logo-sub{color:rgba(255,255,255,.4);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.nav-section{padding:12px 14px 4px;color:rgba(255,255,255,.3);font-size:10px;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;overflow:hidden}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:8px;margin:1px 6px;cursor:pointer;color:rgba(255,255,255,.6);font-size:13px;font-weight:500;transition:all .15s;white-space:nowrap;overflow:hidden;border:none;background:none;width:calc(100% - 12px);text-align:left;font-family:inherit}
+.nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-item.active{background:var(--primary);color:#fff}
+.nav-item svg{flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;flex-shrink:0}
+.topbar-title{font-weight:700;font-size:16px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-chip{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.user-avatar{width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.page-title{font-size:20px;font-weight:700}
+.page-sub{font-size:13px;color:var(--text3);margin-top:2px}
+.card{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:var(--shadow);border-left:3px solid var(--border);cursor:pointer}
+.stat-card:hover{box-shadow:var(--shadow-lg)}
+.stat-num{font-size:28px;font-weight:800;line-height:1}
+.stat-label{font-size:12px;color:var(--text3);margin-top:4px}
+.table-wrap{overflow-x:auto;border-radius:var(--radius-lg);box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse;background:var(--surface)}
+thead{background:var(--surface2)}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+.td-main{font-weight:600;color:var(--text)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-green{background:var(--green-light);color:var(--green)}
+.badge-amber{background:var(--amber-light);color:var(--amber)}
+.badge-red{background:var(--red-light);color:var(--red)}
+.badge-blue{background:var(--primary-light);color:var(--primary)}
+.badge-purple{background:var(--purple-light);color:var(--purple)}
+.badge-gray{background:var(--bg);color:var(--text2)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;white-space:nowrap;font-family:inherit}
+.btn:active{opacity:.8}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-secondary{background:var(--surface);color:var(--text);border:1.5px solid var(--border)}
+.btn-green{background:var(--green);color:#fff}
+.btn-red{background:var(--red);color:#fff}
+.btn-ghost{background:none;color:var(--text2);border:none;padding:6px 10px;font-family:inherit}
+.btn-ghost:hover{background:var(--bg)}
+.btn-icon{padding:7px;border-radius:8px}
+.btn-sm{padding:5px 10px;font-size:12px}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.form-control{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);background:var(--surface);transition:border-color .15s;font-family:inherit}
+.form-control:focus{border-color:var(--primary)}
+.form-control[readonly]{background:var(--surface2);color:var(--text2)}
+textarea.form-control{resize:vertical;min-height:80px}
+.form-grid{display:grid;gap:12px}
+.form-grid-2{grid-template-columns:1fr 1fr}
+.form-section{font-size:12px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;padding:10px 0 8px;border-bottom:1px solid var(--border);margin-bottom:12px;grid-column:1/-1}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--surface);border-radius:var(--radius-lg);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:fadeIn .2s ease}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1}
+.modal-title{font-size:16px;font-weight:700}
+.modal-body{padding:20px}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--surface);position:sticky;bottom:0}
+.fase-track{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.fase-step{flex:1;padding:10px 4px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;background:var(--bg);color:var(--text3);cursor:pointer;border-right:1px solid var(--border);transition:all .15s}
+.fase-step:last-child{border-right:none}
+.fase-step.done{background:var(--green-light);color:var(--green)}
+.fase-step.active{background:var(--primary-light);color:var(--primary)}
+.fase-step.blocked{background:var(--red-light);color:var(--red)}
+.empty{text-align:center;padding:48px 20px;color:var(--text3)}
+.empty-icon{font-size:44px;margin-bottom:12px}
+.empty-title{font-size:16px;font-weight:600;color:var(--text2);margin-bottom:6px}
+.empty-sub{font-size:13px;margin-bottom:16px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.filter-btn{padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;font-family:inherit}
+.filter-btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .3s}
+#toast-container{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{padding:12px 16px;border-radius:10px;font-size:13px;font-weight:500;color:#fff;box-shadow:var(--shadow-lg);animation:fadeIn .2s ease;max-width:320px}
+.toast-ok{background:#064E3B}
+.toast-warn{background:#78350F}
+.toast-err{background:#7F1D1D}
+#login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0F172A 0%,#1E3A8A 100%);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px}
+.login-box{background:rgba(255,255,255,.06);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:32px;width:100%;max-width:340px}
+.login-logo{text-align:center;margin-bottom:24px}
+.login-logo-mark{width:56px;height:56px;background:var(--primary);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#fff;margin-bottom:10px}
+.login-title{color:#fff;font-size:22px;font-weight:800}
+.login-sub{color:rgba(255,255,255,.5);font-size:13px;margin-top:4px}
+.user-selector{display:grid;gap:8px;margin-bottom:16px}
+.user-opt{padding:11px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500;transition:all .15s;font-family:inherit;width:100%;text-align:left}
+.user-opt:hover,.user-opt.selected{border-color:var(--primary);background:rgba(30,64,175,.3)}
+.pin-wrap{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
+.pin-dot{width:44px;height:50px;border:1.5px solid rgba(255,255,255,.2);border-radius:10px;background:rgba(255,255,255,.05);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;font-weight:700;transition:all .15s}
+.pin-dot.filled{border-color:var(--primary);background:rgba(30,64,175,.3)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pin-key{padding:14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff;font-size:18px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.pin-key:hover{background:rgba(255,255,255,.12)}
+.pin-key:active{transform:scale(.93);background:var(--primary)}
+.pin-error{color:#FC8181;text-align:center;font-size:13px;margin-top:8px;min-height:18px}
+.elem-table{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:6px}
+.elem-hdr,.elem-row{display:grid;gap:4px;padding:5px 8px;align-items:center}
+.elem-hdr{background:var(--surface2);font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase}
+.elem-row{border-top:1px solid var(--border)}
+@media(max-width:700px){
+  #sidebar{display:flex;position:fixed;left:-220px;top:0;bottom:0;z-index:90;transition:left .25s;width:220px!important}
+  #sidebar.mobile-open{left:0}
+  #content{padding:12px}
+  .form-grid-2{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  #bottom-nav{display:flex}
+  #main{padding-bottom:64px}
+}
+#bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+.bottom-nav-inner{display:grid;grid-template-columns:repeat(5,1fr);max-width:600px;margin:0 auto}
+.bnav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border:none;background:none;font-size:9px;font-weight:500;color:var(--text3);cursor:pointer;font-family:inherit}
+.bnav-btn.active{color:var(--primary)}
+.bnav-btn svg{width:20px;height:20px}
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<input id="cam-input" type="file" accept="image/*" style="display:none"/>
+<input id="scan-input" type="file" accept="image/*" style="display:none"/>
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-mark">F</div>
+      <div class="login-title">FOIMA CRM</div>
+      <div class="login-sub">Control de producción</div>
+    </div>
+    <div class="user-selector" id="user-selector"></div>
+    <div class="pin-wrap" id="pin-display"></div>
+    <div class="pin-pad" id="pin-pad"></div>
+    <div class="pin-error" id="pin-error"></div>
+  </div>
+</div>
+<div id="shell" style="display:none">
+  <div id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-mark">F</div>
+      <div><div class="sidebar-logo-text">FOIMA CRM</div><div class="sidebar-logo-sub">Producción</div></div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:8px 0" id="nav-menu"></div>
+    <div style="padding:10px 6px;border-top:1px solid rgba(255,255,255,.08)" id="sidebar-user"></div>
+  </div>
+  <div id="main">
+    <div id="topbar">
+      <button class="btn btn-ghost btn-icon" onclick="toggleSidebar()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="user-chip" id="topbar-user" onclick="showUserMenu()"></div>
+    </div>
+    <div id="content"></div>
+  </div>
+</div>
+<div id="bottom-nav"><div class="bottom-nav-inner" id="bottom-nav-inner"></div></div>
+<div id="modal-container"></div>
+
+<script>
+const SB_URL="https://ougbxgwimznxkgnerlgr.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91Z2J4Z3dpbXpueGtnbmVybGdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MDEyNjMsImV4cCI6MjEwMDQ3NzI2M30.nwp402VkuWjLUu4ZmeKHFfxMRUfEEaHQkRx36Arhubc";
+const HDR={"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY};
+async function sbReq(table,method,body,query){
+  const url=SB_URL+"/rest/v1/"+table+(query?"?"+query:"");
+  const opts={method,headers:{...HDR,"Prefer":"return=representation"}};
+  if(body) opts.body=JSON.stringify(body);
+  const r=await fetch(url,opts);
+  if(!r.ok){const e=await r.text();throw new Error(e);}
+  if(method==="DELETE"||r.status===204) return [];
+  return r.json();
+}
+const sbGet=(t,q)=>sbReq(t,"GET",null,q);
+const sbIns=(t,d)=>sbReq(t,"POST",d);
+const sbUpd=(t,id,d)=>sbReq(t,"PATCH",d,"id=eq."+id);
+const sbDel=(t,id)=>sbReq(t,"DELETE",null,"id=eq."+id);
+
+let APP={user:null,page:"dashboard",data:{clientes:[],ots:[],presupuestos:[],catalogo:[],inventario:[],facturas:[],usuarios:[]},filters:{},params:{}};
+
+const PHASES=[
+  {id:"premontaje",label:"Premontaje",color:"#1E40AF"},
+  {id:"hidraulica",label:"Hidráulica",color:"#059669"},
+  {id:"electricidad",label:"Electricidad",color:"#D97706"},
+  {id:"acabados",label:"Acabados",color:"#7C3AED"},
+];
+const CONSUMIBLE_TIPOS=["Tornillería","Consumible","Cable","Brida","Adhesivo/Silicona","Otro"];
+const OT_ESTADOS={
+  pendiente:{label:"Pendiente",cls:"badge-gray"},
+  en_curso:{label:"En curso",cls:"badge-blue"},
+  pausada:{label:"Pausada",cls:"badge-amber"},
+  completada:{label:"Completada",cls:"badge-green"},
+  entregada:{label:"Entregada",cls:"badge-purple"},
+};
+const PRES_ESTADOS={
+  borrador:{label:"Borrador",cls:"badge-gray"},
+  enviado:{label:"Enviado",cls:"badge-blue"},
+  aceptado:{label:"Aceptado",cls:"badge-green"},
+  rechazado:{label:"Rechazado",cls:"badge-red"},
+  caducado:{label:"Caducado",cls:"badge-amber"},
+};
+const FACT_ESTADOS={
+  borrador:{label:"Borrador",cls:"badge-gray"},
+  emitida:{label:"Emitida",cls:"badge-blue"},
+  cobrada:{label:"Cobrada",cls:"badge-green"},
+  vencida:{label:"Vencida",cls:"badge-red"},
+};
+const NAV=[
+  {section:"Principal"},
+  {id:"dashboard",label:"Dashboard",icon:'<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="1.8"/>'},
+  {id:"ots",label:"Órdenes (OT)",icon:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'},
+  {id:"clientes",label:"Clientes",icon:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/>'},
+  {section:"Comercial"},
+  {id:"presupuestos",label:"Presupuestos",icon:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="currentColor" stroke-width="1.8"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'},
+  {id:"facturas",label:"Facturación",icon:'<rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M2 10h20" stroke="currentColor" stroke-width="1.8"/>'},
+  {section:"Producción"},
+  {id:"catalogo",label:"Catálogo",icon:'<path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 014 22V3a1 1 0 011-1h14a1 1 0 011 1v14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'},
+  {id:"inventario",label:"Inventario",icon:'<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="currentColor" stroke-width="1.8"/>'},
+  {section:"Análisis"},
+  {id:"informes",label:"Estadísticas",icon:'<line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="20" x2="12" y2="4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="6" y1="20" x2="6" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'},
+  {section:"Sistema"},
+  {id:"config",label:"Configuración",icon:'<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="1.5"/>'},
+];
+
+function toast(msg,type="ok"){
+  const c=document.getElementById("toast-container");
+  const t=document.createElement("div");
+  t.className="toast toast-"+type; t.textContent=msg; c.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+function fmtDate(d){if(!d)return"—";return new Date(d).toLocaleDateString("es-ES");}
+function fmtMoney(n){return Number(n||0).toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";}
+function statusBadge(est,map){const e=map[est]||{label:est,cls:"badge-gray"};return `<span class="badge ${e.cls}">${e.label}</span>`;}
+function isAdmin(){return APP.user?.rol==="admin";}
+function toggleSidebar(){
+  const sb=document.getElementById("sidebar");
+  const isMobile=window.innerWidth<=700;
+  if(isMobile){
+    if(sb.classList.contains("mobile-open")){
+      sb.classList.remove("mobile-open");
+      document.getElementById("sidebar-overlay").remove();
+    } else {
+      sb.classList.add("mobile-open");
+      const ov=document.createElement("div");
+      ov.id="sidebar-overlay";
+      ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:89";
+      ov.onclick=toggleSidebar;
+      document.body.appendChild(ov);
+    }
+  } else {
+    sb.classList.toggle("collapsed");
+  }
+}
+function openModal(html){document.getElementById("modal-container").innerHTML=html;const ov=document.querySelector(".overlay");if(ov)ov.addEventListener("click",e=>{if(e.target===ov)closeModal();});}
+function closeModal(){document.getElementById("modal-container").innerHTML="";}
+function confirm2(msg,cb){
+  openModal(`<div class="overlay"><div class="modal" style="max-width:360px">
+    <div class="modal-header"><div class="modal-title">Confirmar</div></div>
+    <div class="modal-body"><p style="font-size:14px">${msg}</p></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-red" id="cfm-ok">Confirmar</button>
+    </div></div></div>`);
+  document.getElementById("cfm-ok").onclick=()=>{closeModal();cb();};
+}
+function svgI(d,w){return `<svg width="${w||14}" height="${w||14}" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;}
+
+// LOGIN
+let pinBuf="",selUser=null;
+async function initLogin(){
+  try{APP.data.usuarios=await sbGet("usuarios","activo=eq.true&order=nombre");}
+  catch{APP.data.usuarios=[{id:"a",nombre:"Admin",pin:"1234",rol:"admin"},{id:"b",nombre:"Producción",pin:"0000",rol:"viewer"}];}
+  renderLogin();
+}
+function renderLogin(){
+  const users=APP.data.usuarios;
+  document.getElementById("user-selector").innerHTML=users.map(u=>`
+    <button class="user-opt" id="uopt-${u.id}" onclick="selUserFn('${u.id}','${u.nombre}','${u.pin}','${u.rol}')">
+      <div style="width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">${u.nombre[0]}</div>
+      <div><div>${u.nombre}</div><div style="font-size:11px;color:rgba(255,255,255,.4)">${u.rol}</div></div>
+    </button>`).join("");
+  renderPinDisplay();
+  document.getElementById("pin-pad").innerHTML=["1","2","3","4","5","6","7","8","9","⌫","0","✓"].map(k=>`<button class="pin-key" onclick="pinKey('${k}')">${k}</button>`).join("");
+}
+function selUserFn(id,nombre,pin,rol){
+  selUser={id,nombre,pin,rol}; pinBuf="";
+  document.querySelectorAll(".user-opt").forEach(b=>b.classList.remove("selected"));
+  const el=document.getElementById("uopt-"+id); if(el) el.classList.add("selected");
+  renderPinDisplay(); document.getElementById("pin-error").textContent="";
+}
+function renderPinDisplay(){
+  document.getElementById("pin-display").innerHTML=Array(4).fill(0).map((_,i)=>`
+    <div class="pin-dot ${pinBuf.length>i?"filled":""}">${pinBuf.length>i?"●":""}</div>`).join("");
+}
+function pinKey(k){
+  if(!selUser){toast("Selecciona un usuario","warn");return;}
+  if(k==="⌫"){pinBuf=pinBuf.slice(0,-1);renderPinDisplay();return;}
+  if(pinBuf.length<4) pinBuf+=k;
+  renderPinDisplay();
+  if(pinBuf.length===4||k==="✓") setTimeout(checkPin,100);
+}
+function checkPin(){
+  if(pinBuf===selUser.pin){
+    APP.user=selUser;
+    document.getElementById("login-screen").style.display="none";
+    document.getElementById("shell").style.display="flex";
+    loadApp();
+  } else {
+    document.getElementById("pin-error").textContent="PIN incorrecto";
+    pinBuf=""; renderPinDisplay();
+    setTimeout(()=>{document.getElementById("pin-error").textContent="";},2000);
+  }
+}
+
+async function loadApp(){
+  renderNav(); renderTopbarUser(); renderBottomNav();
+  await loadAllData();
+  navigate("dashboard");
+}
+async function loadAllData(){
+  try{
+    const [a,b,c,d,e,f]=await Promise.all([
+      sbGet("clientes","order=nombre"),
+      sbGet("ots","order=created_at.desc"),
+      sbGet("presupuestos","order=created_at.desc"),
+      sbGet("catalogo_materiales","order=nombre&activo=eq.true"),
+      sbGet("inventario","order=referencia"),
+      sbGet("facturas","order=created_at.desc"),
+    ]);
+    APP.data={...APP.data,clientes:a,ots:b,presupuestos:c,catalogo:d,inventario:e,facturas:f};
+  }catch(e){toast("Error cargando datos: "+e.message,"err");}
+}
+function renderNav(){
+  document.getElementById("nav-menu").innerHTML=NAV.map(n=>{
+    if(n.section) return `<div class="nav-section">${n.section}</div>`;
+    const cnt=n.id==="ots"?APP.data.ots.filter(o=>o.estado==="en_curso").length:0;
+    return `<button class="nav-item ${APP.page===n.id?"active":""}" onclick="navigate('${n.id}')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">${n.icon}</svg>
+      <span>${n.label}</span>${cnt>0?`<span class="nav-badge">${cnt}</span>`:""}
+    </button>`;
+  }).join("");
+}
+function renderBottomNav(){
+  const items=[
+    {id:"dashboard",label:"Inicio",icon:'<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.8"/>'},
+    {id:"ots",label:"OTs",icon:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2" stroke="currentColor" stroke-width="1.8"/>'},
+    {id:"clientes",label:"Clientes",icon:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/>'},
+    {id:"catalogo",label:"Catálogo",icon:'<path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 014 22V3a1 1 0 011-1h14a1 1 0 011 1v14" stroke="currentColor" stroke-width="1.8"/>'},
+    {id:"config",label:"Config",icon:'<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>'},
+  ];
+  document.getElementById("bottom-nav-inner").innerHTML=items.map(i=>`
+    <button class="bnav-btn ${APP.page===i.id?"active":""}" onclick="navigate('${i.id}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">${i.icon}</svg>${i.label}
+    </button>`).join("");
+}
+function renderTopbarUser(){
+  const u=APP.user;
+  document.getElementById("topbar-user").innerHTML=`
+    <div class="user-avatar">${u.nombre[0]}</div>
+    <span>${u.nombre}</span>
+    <span style="font-size:10px;color:var(--text3);background:var(--bg);padding:1px 6px;border-radius:10px">${u.rol}</span>`;
+}
+function showUserMenu(){
+  openModal(`<div class="overlay"><div class="modal" style="max-width:280px">
+    <div class="modal-body" style="text-align:center;padding:24px">
+      <div class="user-avatar" style="width:50px;height:50px;font-size:18px;margin:0 auto 10px">${APP.user.nombre[0]}</div>
+      <div style="font-weight:700;font-size:16px">${APP.user.nombre}</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:16px">${APP.user.rol}</div>
+      <button class="btn btn-secondary" style="width:100%" onclick="logout()">Cerrar sesión</button>
+    </div></div></div>`);
+}
+function logout(){
+  APP.user=null; closeModal();
+  document.getElementById("shell").style.display="none";
+  document.getElementById("login-screen").style.display="flex";
+  pinBuf=""; selUser=null;
+  document.querySelectorAll(".user-opt").forEach(b=>b.classList.remove("selected"));
+  renderPinDisplay();
+}
+function navigate(page,params={}){
+  APP.page=page; APP.params=params;
+  document.getElementById("topbar-title").textContent=NAV.find(n=>n.id===page)?.label||page;
+  renderNav(); renderBottomNav();
+  const c=document.getElementById("content");
+  c.innerHTML=`<div style="text-align:center;padding:60px"><div class="spin">${svgI('<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" stroke="currentColor" stroke-width="2"/>',32)}</div></div>`;
+  setTimeout(()=>{
+    try{
+      switch(page){
+        case "dashboard":renderDashboard();break;
+        case "ots":renderOTs();break;
+        case "ot-detail":renderOTDetail(params.id);break;
+        case "clientes":renderClientes();break;
+        case "cliente-detail":renderClienteDetail(params.id);break;
+        case "presupuestos":renderPresupuestos();break;
+        case "facturas":renderFacturas();break;
+        case "catalogo":renderCatalogo();break;
+        case "inventario":renderInventario();break;
+        case "informes":renderInformes();break;
+        case "config":renderConfig();break;
+        default:c.innerHTML=`<div class="empty"><div class="empty-icon">🚧</div><div class="empty-title">En construcción</div></div>`;
+      }
+    }catch(e){c.innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Error</div><div class="empty-sub">${e.message}</div></div>`;}
+  },50);
+}
+
+// DASHBOARD
+function renderDashboard(){
+  const {ots,clientes,presupuestos,facturas,inventario}=APP.data;
+  const enCurso=ots.filter(o=>o.estado==="en_curso").length;
+  const pendientes=ots.filter(o=>o.estado==="pendiente").length;
+  const cobrado=facturas.filter(f=>f.estado==="cobrada").reduce((s,f)=>s+Number(f.total||0),0);
+  const pendCobro=facturas.filter(f=>f.estado==="emitida").reduce((s,f)=>s+Number(f.total||0),0);
+  const stockBajo=inventario.filter(i=>Number(i.stock_actual)<=Number(i.stock_minimo)&&Number(i.stock_minimo)>0).length;
+  const c=document.getElementById("content");
+  c.innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">Hola, ${APP.user.nombre} 👋</div>
+    <div class="page-sub">${new Date().toLocaleDateString("es-ES",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div></div>
+    ${isAdmin()?`<button class="btn btn-primary" onclick="showNewOTModal()">${svgI('<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>')} Nueva OT</button>`:""}
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card" style="border-color:var(--primary)" onclick="navigate('ots')"><div class="stat-num" style="color:var(--primary)">${enCurso}</div><div class="stat-label">OTs en curso</div></div>
+    <div class="stat-card" style="border-color:var(--amber)" onclick="navigate('ots')"><div class="stat-num" style="color:var(--amber)">${pendientes}</div><div class="stat-label">Pendientes</div></div>
+    <div class="stat-card" style="border-color:var(--green)" onclick="navigate('facturas')"><div class="stat-num" style="color:var(--green);font-size:18px">${fmtMoney(cobrado)}</div><div class="stat-label">Cobrado</div></div>
+    <div class="stat-card" style="border-color:var(--amber)" onclick="navigate('facturas')"><div class="stat-num" style="color:var(--amber);font-size:18px">${fmtMoney(pendCobro)}</div><div class="stat-label">Pendiente cobro</div></div>
+    <div class="stat-card" onclick="navigate('clientes')"><div class="stat-num">${clientes.length}</div><div class="stat-label">Clientes</div></div>
+    ${stockBajo>0?`<div class="stat-card" style="border-color:var(--red)" onclick="navigate('inventario')"><div class="stat-num" style="color:var(--red)">${stockBajo}</div><div class="stat-label">Stock bajo</div></div>`:""}
+  </div>
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+    <div class="card">
+      <div class="card-title">Últimas OTs</div>
+      ${ots.slice(0,6).length===0?`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Sin OTs</div></div>`:
+      `<table><thead><tr><th>Nº OT</th><th>Cliente</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
+      ${ots.slice(0,6).map(ot=>{
+        const cli=clientes.find(c=>c.id===ot.cliente_id);
+        return `<tr onclick="navigate('ot-detail',{id:'${ot.id}'})" style="cursor:pointer">
+          <td class="td-main">OT-${ot.numero}</td>
+          <td>${cli?.nombre||ot.campos_hoja?.cliente||"—"}</td>
+          <td>${statusBadge(ot.estado,OT_ESTADOS)}</td>
+          <td>${fmtDate(ot.created_at)}</td>
+        </tr>`;}).join("")}
+      </tbody></table>`}
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title">Presupuestos recientes</div>
+        ${presupuestos.slice(0,5).map(p=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+            <div><div style="font-size:13px;font-weight:600">${p.numero}</div><div style="font-size:11px;color:var(--text3)">${fmtMoney(p.importe_total)}</div></div>
+            ${statusBadge(p.estado,PRES_ESTADOS)}
+          </div>`).join("")||`<div style="color:var(--text3);font-size:13px;text-align:center;padding:16px">Sin presupuestos</div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+// OTs LIST
+function renderOTs(){
+  const {ots,clientes}=APP.data;
+  const f=APP.filters.ots_estado||"todas";
+  const filtered=f==="todas"?ots:ots.filter(o=>o.estado===f);
+  document.getElementById("content").innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">Órdenes de Trabajo</div><div class="page-sub">${ots.length} OTs · ${ots.filter(o=>o.estado==="en_curso").length} en curso</div></div>
+    ${isAdmin()?`<button class="btn btn-primary" onclick="showNewOTModal()">${svgI('<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>')} Nueva OT</button>`:""}
+  </div>
+  <div class="filters">
+    ${["todas","pendiente","en_curso","pausada","completada","entregada"].map(s=>`
+      <button class="filter-btn ${f===s?"active":""}" onclick="APP.filters.ots_estado='${s}';renderOTs()">
+        ${s==="todas"?"Todas":OT_ESTADOS[s]?.label||s} ${s!=="todas"?`(${ots.filter(o=>o.estado===s).length})`:""}</button>`).join("")}
+  </div>
+  <div class="table-wrap"><table><thead><tr>
+    <th>Nº OT</th><th>Cliente</th><th>Descripción</th><th>Estado</th><th>Prioridad</th><th>Entrada</th><th>Entrega</th>
+  </tr></thead><tbody>
+  ${filtered.length===0?`<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text3)">Sin órdenes</td></tr>`:
+  filtered.map(ot=>{
+    const cli=clientes.find(c=>c.id===ot.cliente_id);
+    const priColor=ot.prioridad==="urgente"?"var(--red)":ot.prioridad==="alta"?"var(--amber)":"var(--text3)";
+    return `<tr onclick="navigate('ot-detail',{id:'${ot.id}'})" style="cursor:pointer">
+      <td class="td-main">OT-${ot.numero}</td>
+      <td>${cli?.nombre||ot.campos_hoja?.cliente||"—"}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ot.descripcion||"—"}</td>
+      <td>${statusBadge(ot.estado,OT_ESTADOS)}</td>
+      <td style="color:${priColor};font-weight:600;font-size:12px">${ot.prioridad||"normal"}</td>
+      <td>${fmtDate(ot.fecha_entrada)}</td>
+      <td>${fmtDate(ot.fecha_prevista)}</td>
+    </tr>`;}).join("")}
+  </tbody></table></div>`;
+}
+
+// OT DETAIL
+async function renderOTDetail(id){
+  const ot=APP.data.ots.find(o=>o.id===id);
+  if(!ot){toast("OT no encontrada","err");navigate("ots");return;}
+  let fases=[],mats=[];
+  try{[fases,mats]=await Promise.all([sbGet("ot_fases","ot_id=eq."+id+"&order=orden"),sbGet("ot_materiales","ot_id=eq."+id)]);}catch{}
+  const cli=APP.data.clientes.find(c=>c.id===ot.cliente_id);
+  const ch=ot.campos_hoja||{};
+  const tab=APP.params?.tab||"hoja";
+  const activeFase=APP.params?.fase||"premontaje";
+  document.getElementById("content").innerHTML=`
+  <div class="page-header">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="btn btn-secondary btn-icon" onclick="navigate('ots')">${svgI('<path d="M15 4L8 12l7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',18)}</button>
+      <div><div class="page-title">OT-${ot.numero}</div><div class="page-sub">${cli?.nombre||ch.cliente||"Sin cliente"}</div></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      ${statusBadge(ot.estado,OT_ESTADOS)}
+      ${isAdmin()?`<select class="form-control" style="width:auto;padding:6px 10px;font-size:12px" onchange="updateOTEstado('${ot.id}',this.value)">
+        ${Object.entries(OT_ESTADOS).map(([k,v])=>`<option value="${k}" ${ot.estado===k?"selected":""}>${v.label}</option>`).join("")}
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="showEditOTModal('${ot.id}')">✏️ Editar</button>`:""}
+    </div>
+  </div>
+  <div class="card" style="padding:12px;margin-bottom:12px">
+    <div class="fase-track">
+      ${PHASES.map(p=>{
+        const f=fases.find(x=>x.fase===p.id);
+        const cls=!f?"":f.estado==="completada"?"done":f.estado==="en_curso"?"active":f.estado==="bloqueada"?"blocked":"";
+        return `<div class="fase-step ${cls}" onclick="showFaseModal('${ot.id}','${p.id}')">
+          ${p.label}<br><span style="font-size:9px;font-weight:400">${f?.estado||"pendiente"}</span>
+        </div>`;}).join("")}
+    </div>
+  </div>
+  <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px">
+    ${[["hoja","📋 Hoja pedido"],["materiales","📦 Materiales"],["resumen","🔩 Resumen"]].map(([t,l])=>`
+      <button class="btn btn-ghost" style="border-bottom:2.5px solid ${tab===t?"var(--primary)":"transparent"};border-radius:0;padding:10px 14px;font-size:13px;font-weight:600;color:${tab===t?"var(--primary)":"var(--text3)"};"
+        onclick="APP.params.tab='${t}';renderOTDetail('${ot.id}')">${l}</button>`).join("")}
+  </div>
+  <div id="ot-tab-content"></div>`;
+  const tc=document.getElementById("ot-tab-content");
+  if(tab==="hoja") renderHojaTab(tc,ot);
+  else if(tab==="materiales") renderMaterialesTab(tc,ot,fases,mats,activeFase);
+  else if(tab==="resumen") renderResumenTab(tc,mats);
+}
+
+function renderHojaTab(tc,ot){
+  const ch=ot.campos_hoja||{};
+  const ed=isAdmin();
+  const fi=(label,id,val,type)=>`<div class="form-group">
+    <label class="form-label">${label}</label>
+    ${ed?`<input class="form-control" type="${type||"text"}" value="${String(val||"").replace(/"/g,"&quot;")}" onchange="updCh('${ot.id}','${id}',this.value)"/>`
+      :`<div style="font-size:14px;color:var(--text);padding:6px 0">${val||"—"}</div>`}
+  </div>`;
+  tc.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div>
+      <div class="form-section">Datos del cliente</div>
+      ${fi("Fecha","fecha",ch.fecha,"date")}${fi("Cliente","cliente",ch.cliente)}${fi("OT/Ilave","otIlave",ch.otIlave)}${fi("Contacto","contacto",ch.contacto)}${fi("Oferta","oferta",ch.oferta)}${fi("Teléfono","telefono",ch.telefono)}${fi("Email","email",ch.email)}${fi("Nº Pedido","numeroPedido",ch.numeroPedido)}
+      <div class="form-section">Vehículo</div>
+      ${fi("Marca/Modelo","marcaModelo",ch.marcaModelo)}${fi("Bastidor","bastidor",ch.bastidor)}${fi("DEE","dee",ch.dee)}${fi("Voltaje","voltaje",ch.voltaje)}${fi("Fecha llegada","fechaLleg",ch.fechaLleg)}
+    </div>
+    <div>
+      <div class="form-section">Equipo</div>
+      ${fi("Equipo","equipo",ch.equipo)}${fi("Tipo carrocería","tipoCarro",ch.tipoCarro)}${fi("Dim. plataforma","dimPlat",ch.dimPlat)}${fi("Tipo suspensión","tipoSusp",ch.tipoSusp)}
+      <div class="form-section">Cabestrante</div>
+      ${fi("Modelo","modeloCabr",ch.modeloCabr)}${fi("Montaje","montajeCabr",ch.montajeCabr)}
+      <div class="form-section">Pintura</div>
+      ${fi("Cabina","pintCabina",ch.pintCabina)}${fi("Carrocería","pintCarro",ch.pintCarro)}${fi("Sch","pintSch",ch.pintSch)}
+      <div class="form-section">Accesorios</div>
+      ${fi("Cajas herr.","cajasHerr",ch.cajasHerr)}${fi("Calzos","calzos",ch.calzos)}${fi("Eslingas","eslingas",ch.eslingas)}${fi("Visera","visera",ch.visera)}
+      <div class="form-section">Observaciones</div>
+      ${ed?`<textarea class="form-control" rows="3" onchange="updCh('${ot.id}','obs1',this.value)">${ch.obs1||""}</textarea>
+      <textarea class="form-control" rows="2" style="margin-top:8px" onchange="updCh('${ot.id}','obsLibre',this.value)">${ch.obsLibre||""}</textarea>`
+      :`<div style="font-size:14px">${ch.obs1||"—"}</div>`}
+      <div class="form-section">Firma</div>
+      ${fi("Comercial","comercial",ch.comercial)}${fi("Revisado por","revisadoPor",ch.revisadoPor)}${fi("Plazo","plazo",ch.plazo)}
+    </div>
+  </div>
+  ${ed?`<div style="margin-top:12px"><button class="btn btn-green" onclick="saveOTHoja('${ot.id}')">💾 Guardar cambios</button></div>`:""}`;
+}
+
+function updCh(otId,campo,val){const ot=APP.data.ots.find(o=>o.id===otId);if(ot){if(!ot.campos_hoja)ot.campos_hoja={};ot.campos_hoja[campo]=val;}}
+async function saveOTHoja(otId){
+  const ot=APP.data.ots.find(o=>o.id===otId);if(!ot)return;
+  try{await sbUpd("ots",otId,{campos_hoja:ot.campos_hoja,updated_at:new Date().toISOString()});toast("Guardado ✓");}
+  catch(e){toast("Error: "+e.message,"err");}
+}
+
+function renderMaterialesTab(tc,ot,fases,mats,activeFase){
+  const faseMats=mats.filter(m=>m.fase===activeFase);
+  tc.innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+      ${PHASES.map(p=>{const cnt=mats.filter(m=>m.fase===p.id).length;const isA=activeFase===p.id;
+        return `<button class="btn ${isA?"btn-primary":"btn-secondary"}" style="justify-content:center;font-size:12px"
+          onclick="APP.params.fase='${p.id}';APP.params.tab='materiales';renderOTDetail('${ot.id}')">
+          ${p.label}${cnt>0?` <span style="background:rgba(255,255,255,.2);padding:1px 5px;border-radius:8px;font-size:10px">${cnt}</span>`:""}
+        </button>`;}).join("")}
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-weight:600">${PHASES.find(p=>p.id===activeFase)?.label} — ${faseMats.length} materiales</div>
+      ${isAdmin()?`<button class="btn btn-primary btn-sm" onclick="showAddMatModal('${ot.id}','${activeFase}')">${svgI('<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>')} Del catálogo</button>`:""}
+    </div>
+    ${faseMats.length===0?`<div class="empty"><div class="empty-icon">📦</div><div class="empty-title">Sin materiales en esta fase</div></div>`:
+    faseMats.map(mat=>`
+      <div class="card" style="padding:14px;margin-bottom:10px">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          ${mat.foto_url?`<img src="${mat.foto_url}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0"/>`
+            :`<div style="width:48px;height:48px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📦</div>`}
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:15px">${mat.nombre}</div>
+            ${mat.codigo?`<div style="font-family:monospace;font-size:12px;color:var(--text3)">${mat.codigo}</div>`:""}
+          </div>
+          ${isAdmin()?`<button class="btn btn-ghost btn-icon btn-sm" style="color:var(--red)" onclick="delMatFromOT('${mat.id}','${ot.id}','${activeFase}')">🗑️</button>`:""}
+        </div>
+        ${(mat.elementos||[]).length>0?`<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+          ${groupElems(mat.elementos||[]).map(([tipo,items])=>`
+            <div style="margin-bottom:8px">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--primary);margin-bottom:4px">${tipo}</div>
+              <table style="width:100%;border-collapse:collapse">
+                <thead><tr><th style="font-size:10px;padding:3px 6px;text-align:left;color:var(--text3)">Ref.</th><th style="font-size:10px;padding:3px 6px;text-align:left;color:var(--text3)">Desc.</th><th style="font-size:10px;padding:3px 6px;text-align:right;color:var(--text3)">Cant.</th></tr></thead>
+                <tbody>${items.map(e=>`<tr><td style="font-family:monospace;font-size:12px;font-weight:600;padding:3px 6px">${e.ref||"—"}</td><td style="font-size:12px;color:var(--text2);padding:3px 6px">${e.desc||""}</td><td style="text-align:right;font-weight:700;font-size:13px;padding:3px 6px">${e.qty}</td></tr>`).join("")}</tbody>
+              </table>
+            </div>`).join("")}
+        </div>`:""}
+      </div>`).join("")}`;
+}
+
+function groupElems(elems){const m={};elems.forEach(e=>{const t=e.tipo||"Tornillería";if(!m[t])m[t]=[];m[t].push(e);});return Object.entries(m);}
+
+function renderResumenTab(tc,mats){
+  const map={};
+  mats.forEach(mat=>(mat.elementos||[]).forEach(e=>{
+    if(!e.ref?.trim())return;
+    const k=(e.tipo||"?")+":"+e.ref.trim().toUpperCase();
+    if(!map[k])map[k]={tipo:e.tipo||"?",ref:e.ref.trim(),desc:e.desc,total:0};
+    map[k].total+=Number(e.qty)||0;
+  }));
+  const items=Object.values(map).sort((a,b)=>b.total-a.total);
+  const total=items.reduce((s,i)=>s+i.total,0);
+  tc.innerHTML=`
+    <div class="stats-grid" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="stat-card"><div class="stat-num">${items.length}</div><div class="stat-label">Referencias</div></div>
+      <div class="stat-card" style="border-color:var(--amber)"><div class="stat-num" style="color:var(--amber)">${total}</div><div class="stat-label">Unidades totales</div></div>
+      <div class="stat-card"><div class="stat-num">${mats.length}</div><div class="stat-label">Materiales asignados</div></div>
+    </div>
+    ${items.length===0?`<div class="empty"><div class="empty-icon">🔩</div><div class="empty-title">Sin elementos registrados</div></div>`:
+    `<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Referencia</th><th>Descripción</th><th style="text-align:right">Total uds.</th></tr></thead><tbody>
+    ${items.map(i=>`<tr><td><span class="badge badge-blue" style="font-size:10px">${i.tipo}</span></td>
+      <td style="font-family:monospace;font-weight:700">${i.ref}</td>
+      <td style="color:var(--text2)">${i.desc||"—"}</td>
+      <td style="text-align:right;font-weight:800;font-size:16px">${i.total}</td></tr>`).join("")}
+    </tbody></table></div>`}`;
+}
+
+async function updateOTEstado(id,estado){
+  try{await sbUpd("ots",id,{estado,updated_at:new Date().toISOString()});const ot=APP.data.ots.find(o=>o.id===id);if(ot)ot.estado=estado;toast("Estado actualizado ✓");}
+  catch(e){toast("Error: "+e.message,"err");}
+}
+async function delMatFromOT(matId,otId,fase){
+  confirm2("¿Eliminar material de la OT?",async()=>{
+    try{await sbDel("ot_materiales",matId);toast("Eliminado");APP.params.fase=fase;APP.params.tab="materiales";renderOTDetail(otId);}
+    catch(e){toast("Error: "+e.message,"err");}
+  });
+}
+
+// OT MODALS
+function showNewOTModal(){
+  window._newOTCampos={};
+  openModal(`<div class="overlay"><div class="modal" style="max-width:600px">
+    <div class="modal-header"><div class="modal-title">Nueva OT</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:14px" onclick="scanHojaForOT()">
+        📄 ${window.innerWidth<700?"Foto de hoja":"Cargar hoja con IA"}
+      </button>
+      <div id="scan-ok" style="display:none;font-size:13px;color:var(--green);margin-bottom:10px">✓ Campos cargados desde la hoja</div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Nº OT *</label><input class="form-control" id="not-num" placeholder="2025-0042"/></div>
+        <div class="form-group"><label class="form-label">Cliente</label>
+          <select class="form-control" id="not-cli"><option value="">— Seleccionar —</option>
+          ${APP.data.clientes.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join("")}</select>
+        </div>
+        <div class="form-group"><label class="form-label">Descripción / Modelo</label><input class="form-control" id="not-desc"/></div>
+        <div class="form-group"><label class="form-label">Prioridad</label>
+          <select class="form-control" id="not-prior"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Fecha entrada</label><input class="form-control" type="date" id="not-ent" value="${new Date().toISOString().slice(0,10)}"/></div>
+        <div class="form-group"><label class="form-label">Entrega prevista</label><input class="form-control" type="date" id="not-prev"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="createOT()">Crear OT</button>
+    </div>
+  </div></div>`);
+}
+
+function scanHojaForOT(){
+  const key=localStorage.getItem("foima_anthropic_key")||"";
+  if(!key){toast("Configura la API key en Configuración","warn");return;}
+  const inp=document.getElementById("scan-input");if(!inp)return;
+  if(window.innerWidth<700)inp.setAttribute("capture","environment");else inp.removeAttribute("capture");
+  inp.onchange=async function(e){
+    const file=e.target.files[0];if(!file)return;
+    toast("Analizando hoja con IA...");
+    const reader=new FileReader();
+    reader.onload=async function(ev){
+      const b64=ev.target.result.split(",")[1];
+      const campos=await analizarHoja(b64,file.type||"image/jpeg");
+      if(campos){
+        window._newOTCampos=campos;
+        if(campos.otIlave){const m=campos.otIlave.match(/\d{4,}/);if(m)document.getElementById("not-num").value=m[0];}
+        if(campos.cliente){
+          document.getElementById("not-desc").value=campos.cliente;
+          const found=APP.data.clientes.find(c=>c.nombre.toLowerCase().includes(campos.cliente.toLowerCase()));
+          if(found)document.getElementById("not-cli").value=found.id;
+        }
+        const ok=document.getElementById("scan-ok");if(ok)ok.style.display="block";
+        toast("Hoja analizada ✓");
+      }
+    };
+    reader.readAsDataURL(file);inp.value="";
+  };
+  inp.click();
+}
+
+async function createOT(){
+  const num=document.getElementById("not-num").value.trim();
+  if(!num){toast("El número de OT es obligatorio","warn");return;}
+  try{
+    const [ot]=await sbIns("ots",[{
+      numero:num,descripcion:document.getElementById("not-desc").value,
+      cliente_id:document.getElementById("not-cli").value||null,
+      prioridad:document.getElementById("not-prior").value,
+      fecha_entrada:document.getElementById("not-ent").value||null,
+      fecha_prevista:document.getElementById("not-prev").value||null,
+      estado:"pendiente",campos_hoja:window._newOTCampos||{}
+    }]);
+    window._newOTCampos={};
+    APP.data.ots.unshift(ot);
+    closeModal();toast("OT-"+num+" creada ✓");
+    navigate("ot-detail",{id:ot.id});
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+
+function showEditOTModal(id){
+  const ot=APP.data.ots.find(o=>o.id===id);if(!ot)return;
+  openModal(`<div class="overlay"><div class="modal">
+    <div class="modal-header"><div class="modal-title">Editar OT-${ot.numero}</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Descripción</label><input class="form-control" id="eot-desc" value="${ot.descripcion||""}"/></div>
+        <div class="form-group"><label class="form-label">Cliente</label>
+          <select class="form-control" id="eot-cli"><option value="">—</option>
+          ${APP.data.clientes.map(c=>`<option value="${c.id}" ${ot.cliente_id===c.id?"selected":""}>${c.nombre}</option>`).join("")}</select>
+        </div>
+        <div class="form-group"><label class="form-label">Prioridad</label>
+          <select class="form-control" id="eot-prior">
+            ${["normal","alta","urgente"].map(p=>`<option value="${p}" ${ot.prioridad===p?"selected":""}>${p}</option>`).join("")}
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Estado</label>
+          <select class="form-control" id="eot-estado">
+            ${Object.entries(OT_ESTADOS).map(([k,v])=>`<option value="${k}" ${ot.estado===k?"selected":""}>${v.label}</option>`).join("")}
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Fecha entrada</label><input class="form-control" type="date" id="eot-ent" value="${ot.fecha_entrada||""}"/></div>
+        <div class="form-group"><label class="form-label">Entrega prevista</label><input class="form-control" type="date" id="eot-prev" value="${ot.fecha_prevista||""}"/></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notas internas</label><textarea class="form-control" id="eot-notas">${ot.notas_internas||""}</textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditOT('${id}')">Guardar</button>
+    </div>
+  </div></div>`);
+}
+
+async function saveEditOT(id){
+  const data={
+    descripcion:document.getElementById("eot-desc").value,
+    cliente_id:document.getElementById("eot-cli").value||null,
+    prioridad:document.getElementById("eot-prior").value,
+    estado:document.getElementById("eot-estado").value,
+    fecha_entrada:document.getElementById("eot-ent").value||null,
+    fecha_prevista:document.getElementById("eot-prev").value||null,
+    notas_internas:document.getElementById("eot-notas").value,
+    updated_at:new Date().toISOString(),
+  };
+  try{
+    await sbUpd("ots",id,data);
+    const i=APP.data.ots.findIndex(o=>o.id===id);
+    if(i>=0)APP.data.ots[i]={...APP.data.ots[i],...data};
+    closeModal();toast("OT actualizada ✓");renderOTDetail(id);
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+
+function showFaseModal(otId,faseId){
+  const fase=PHASES.find(p=>p.id===faseId);
+  openModal(`<div class="overlay"><div class="modal" style="max-width:400px">
+    <div class="modal-header"><div class="modal-title">${fase?.label}</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Estado</label>
+        <select class="form-control" id="fs-estado">
+          ${["pendiente","en_curso","completada","bloqueada"].map(s=>`<option value="${s}">${s}</option>`).join("")}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Operario</label><input class="form-control" id="fs-op" placeholder="Nombre del operario"/></div>
+      <div class="form-group"><label class="form-label">Notas</label><textarea class="form-control" id="fs-notas" rows="3"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveFase('${otId}','${faseId}')">Guardar</button>
+    </div>
+  </div></div>`);
+}
+
+async function saveFase(otId,faseId){
+  const estado=document.getElementById("fs-estado").value;
+  const operario=document.getElementById("fs-op").value;
+  const notas=document.getElementById("fs-notas").value;
+  try{
+    const existing=await sbGet("ot_fases","ot_id=eq."+otId+"&fase=eq."+faseId);
+    if(existing.length>0){await sbUpd("ot_fases",existing[0].id,{estado,operario,notas});}
+    else{await sbIns("ot_fases",[{ot_id:otId,fase:faseId,estado,operario,notas,orden:PHASES.findIndex(p=>p.id===faseId)}]);}
+    closeModal();toast("Fase actualizada ✓");renderOTDetail(otId);
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+
+// ADD MAT MODAL
+function showAddMatModal(otId,faseId){
+  let selFaseId=faseId;
+  openModal(`<div class="overlay"><div class="modal" style="max-width:500px;height:80vh;display:flex;flex-direction:column">
+    <div class="modal-header" style="flex-shrink:0"><div class="modal-title">Añadir material</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
+    <div style="padding:12px 20px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:8px">Fase</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        ${PHASES.map(p=>`<button class="btn btn-sm ${p.id===faseId?"btn-primary":"btn-secondary"} fase-sel" data-fase="${p.id}" onclick="selFaseBtn(this)">${p.label}</button>`).join("")}
+      </div>
+      <input class="form-control" placeholder="Buscar material..." oninput="filterCatMdl(this.value,'${otId}')"/>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:12px 20px" id="cat-mdl-list">${renderCatMdlList(APP.data.catalogo,otId,faseId)}</div>
+  </div></div>`);
+}
+function selFaseBtn(btn){document.querySelectorAll(".fase-sel").forEach(b=>{b.className=b.className.replace("btn-primary","btn-secondary");});btn.className=btn.className.replace("btn-secondary","btn-primary");}
+function filterCatMdl(q,otId){
+  const fb=document.querySelector(".fase-sel.btn-primary");const fid=fb?.dataset.fase||"premontaje";
+  const cats=APP.data.catalogo.filter(c=>!q||c.nombre.toLowerCase().includes(q.toLowerCase())||c.codigo?.toLowerCase().includes(q.toLowerCase()));
+  document.getElementById("cat-mdl-list").innerHTML=renderCatMdlList(cats,otId,fid);
+}
+function renderCatMdlList(cats,otId,faseId){
+  if(!cats.length)return`<div class="empty"><div class="empty-icon">📦</div><div class="empty-title">Sin resultados</div></div>`;
+  return cats.map(c=>`
+    <div class="card" style="padding:12px;cursor:pointer;margin-bottom:8px" onclick="addMatToOT('${c.id}','${otId}','${faseId}')">
+      <div style="display:flex;gap:10px;align-items:center">
+        ${c.foto_url?`<img src="${c.foto_url}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0"/>`:`<div style="width:40px;height:40px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📦</div>`}
+        <div style="flex:1"><div style="font-weight:600">${c.nombre}</div><div style="font-size:11px;color:var(--text3)">${c.codigo||""} · ${(c.elementos||[]).length} elementos</div></div>
+        <span style="color:var(--primary);font-size:18px">+</span>
+      </div>
+    </div>`).join("");
+}
+async function addMatToOT(catId,otId,faseId){
+  const fb=document.querySelector(".fase-sel.btn-primary");const fase=fb?.dataset.fase||faseId;
+  const cat=APP.data.catalogo.find(c=>c.id===catId);if(!cat)return;
+  try{
+    await sbIns("ot_materiales",[{ot_id:otId,catalogo_id:catId,fase,nombre:cat.nombre,codigo:cat.codigo,foto_url:cat.foto_url,elementos:cat.elementos||[]}]);
+    closeModal();toast(cat.nombre+" añadido ✓");APP.params.fase=fase;APP.params.tab="materiales";renderOTDetail(otId);
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+
+// CLIENTES
+function renderClientes(){
+  const {clientes}=APP.data;
+  document.getElementById("content").innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">Clientes</div><div class="page-sub">${clientes.length} clientes</div></div>
+    ${isAdmin()?`<button class="btn btn-primary" onclick="showCliModal()">${svgI('<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>')} Nuevo cliente</button>`:""}
+  </div>
+  <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>CIF</th><th>Teléfono</th><th>Email</th><th>OTs</th>${isAdmin()?"<th></th>":""}</tr></thead><tbody>
+  ${clientes.length===0?`<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">Sin clientes</td></tr>`:
+  clientes.map(c=>{const nOTs=APP.data.ots.filter(o=>o.cliente_id===c.id).length;
+    return `<tr onclick="navigate('cliente-detail',{id:'${c.id}'})" style="cursor:pointer">
+      <td class="td-main">${c.nombre}</td>
+      <td style="font-family:monospace;font-size:12px">${c.cif||"—"}</td>
+      <td>${c.telefono||c.movil||"—"}</td>
+      <td style="font-size:12px">${c.email||"—"}</td>
+      <td><span class="badge badge-blue">${nOTs} OTs</span></td>
+      ${isAdmin()?`<td onclick="event.stopPropagation()">
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="showCliModal('${c.id}')">✏️</button>
+        <button class="btn btn-ghost btn-icon btn-sm" style="color:var(--red)" onclick="deleteCli('${c.id}')">🗑️</button>
+      </td>`:""}
+    </tr>`;}).join("")}
+  </tbody></table></div>`;
+}
+
+async function renderClienteDetail(id){
+  const c=APP.data.clientes.find(x=>x.id===id);if(!c){navigate("clientes");return;}
+  const otsC=APP.data.ots.filter(o=>o.cliente_id===id);
+  const factsC=APP.data.facturas.filter(f=>f.cliente_id===id);
+  document.getElementById("content").innerHTML=`
+  <div class="page-header">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="btn btn-secondary btn-icon" onclick="navigate('clientes')">${svgI('<path d="M15 4L8 12l7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',18)}</button>
+      <div><div class="page-title">${c.nombre}</div><div class="page-sub">${c.cif||""}</div></div>
+    </div>
+    ${isAdmin()?`<button class="btn btn-primary" onclick="showCliModal('${c.id}')">✏️ Editar</button>`:""}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="card">
+      <div class="card-title">Datos de contacto</div>
+      ${[["Teléfono",c.telefono],["Móvil",c.movil],["Email",c.email],["Dirección",c.direccion],["Población",c.poblacion+" "+(c.cp||"")],["Provincia",c.provincia]].map(([l,v])=>`
+        <div style="margin-bottom:10px"><div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase">${l}</div><div style="font-size:14px">${v||"—"}</div></div>`).join("")}
+      ${c.notas?`<div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:13px;color:var(--text2)">${c.notas}</div>`:""}
+    </div>
+    <div>
+      <div class="stats-grid" style="grid-template-columns:1fr 1fr">
+        <div class="stat-card" style="border-color:var(--primary)"><div class="stat-num" style="color:var(--primary)">${otsC.length}</div><div class="stat-label">OTs</div></div>
+        <div class="stat-card" style="border-color:var(--green)"><div class="stat-num" style="color:var(--green);font-size:16px">${fmtMoney(factsC.filter(f=>f.estado==="cobrada").reduce((s,f)=>s+Number(f.total||0),0))}</div><div class="stat-label">Facturado</div></div>
+      </div>
+      ${c.contacto_nombre?`<div class="card"><div class="card-title">Persona de contacto</div>
+        <div style="font-weight:600">${c.contacto_nombre}</div>
+        <div style="font-size:12px;color:var(--text3)">${c.contacto_email||""} ${c.contacto_telefono?("· "+c.contacto_telefono):""}</div>
+      </div>`:""}
+    </div>
+  </div>
+  <div class="card"><div class="card-title">Historial de OTs</div>
+    ${otsC.length===0?`<div class="empty" style="padding:20px"><div class="empty-title">Sin OTs</div></div>`:
+    `<table><thead><tr><th>Nº OT</th><th>Descripción</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
+    ${otsC.map(ot=>`<tr onclick="navigate('ot-detail',{id:'${ot.id}'})" style="cursor:pointer">
+      <td class="td-main">OT-${ot.numero}</td><td>${ot.descripcion||"—"}</td>
+      <td>${statusBadge(ot.estado,OT_ESTADOS)}</td><td>${fmtDate(ot.created_at)}</td></tr>`).join("")}
+    </tbody></table>`}
+  </div>`;
+}
+
+function showCliModal(id=null){
+  const c=id?APP.data.clientes.find(x=>x.id===id):{};
+  const v=k=>String(c?.[k]||"").replace(/"/g,"&quot;");
+  openModal(`<div class="overlay"><div class="modal" style="max-width:580px">
+    <div class="modal-header"><div class="modal-title">${id?"Editar cliente":"Nuevo cliente"}</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
+    <div class="modal-body"><div class="form-grid form-grid-2">
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Nombre *</label><input class="form-control" id="cl-nombre" value="${v("nombre")}"/></div>
+      <div class="form-group"><label class="form-label">CIF/NIF</label><input class="form-control" id="cl-cif" value="${v("cif")}"/></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="cl-email" type="email" value="${v("email")}"/></div>
+      <div class="form-group"><label class="form-label">Teléfono</label><input class="form-control" id="cl-tel" value="${v("telefono")}"/></div>
+      <div class="form-group"><label class="form-label">Móvil</label><input class="form-control" id="cl-mov" value="${v("movil")}"/></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Dirección</label><input class="form-control" id="cl-dir" value="${v("direccion")}"/></div>
+      <div class="form-group"><label class="form-label">Población</label><input class="form-control" id="cl-pob" value="${v("poblacion")}"/></div>
+      <div class="form-group"><label class="form-label">CP</label><input class="form-control" id="cl-cp" value="${v("cp")}"/></div>
+      <div class="form-section">Contacto</div>
+      <div class="form-group"><label class="form-label">Nombre</label><input class="form-control" id="cl-cn" value="${v("contacto_nombre")}"/></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="cl-ce" value="${v("contacto_email")}"/></div>
+      <div class="form-group"><label class="form-label">Teléfono</label><input class="form-control" id="cl-ct" value="${v("contacto_telefono")}"/></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notas</label><textarea class="form-control" id="cl-notas">${c?.notas||""}</textarea></div>
+    </div></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCli('${id||""}')">${id?"Guardar":"Crear"}</button>
+    </div>
+  </div></div>`);
+}
+async function saveCli(id){
+  const data={nombre:document.getElementById("cl-nombre").value.trim(),cif:document.getElementById("cl-cif").value,email:document.getElementById("cl-email").value,telefono:document.getElementById("cl-tel").value,movil:document.getElementById("cl-mov").value,direccion:document.getElementById("cl-dir").value,poblacion:document.getElementById("cl-pob").value,cp:document.getElementById("cl-cp").value,contacto_nombre:document.getElementById("cl-cn").value,contacto_email:document.getElementById("cl-ce").value,contacto_telefono:document.getElementById("cl-ct").value,notas:document.getElementById("cl-notas").value,updated_at:new Date().toISOString()};
+  if(!data.nombre){toast("El nombre es obligatorio","warn");return;}
+  try{
+    if(id){await sbUpd("clientes",id,data);const i=APP.data.clientes.findIndex(c=>c.id===id);if(i>=0)APP.data.clientes[i]={...APP.data.clientes[i],...data};}
+    else{const[n]=await sbIns("clientes",[data]);APP.data.clientes.unshift(n);}
+    toast("Cliente guardado ✓");closeModal();renderClientes();
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+async function deleteCli(id){confirm2("¿Eliminar este cliente?",async()=>{try{await sbDel("clientes",id);APP.data.clientes=APP.data.clientes.filter(c=>c.id!==id);toast("Eliminado");renderClientes();}catch(e){toast("Error","err");}});}
+
+// PRESUPUESTOS
+function renderPresupuestos(){
+  const {presupuestos,clientes}=APP.data;
+  document.getElementById("content").innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">Presupuestos</div><div class="page-sub">${presupuestos.length} presupuestos</div></div>
+    ${isAdmin()?`<button class="btn btn-primary" onclick="showPresModal()">${svgI('<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>')} Nuevo</button>`:""}
+  </div>
+  <div class="table-wrap"><table><thead><tr><th>Número</th><th>Cliente</th><th>Fecha</th><th>Importe</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
+  ${presupuestos.length===0?`<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">Sin presupuestos</td></tr>`:
+  presupuestos.map(p=>{const cli=clientes.find(c=>c.id===p.cliente_id);
+    return `<tr>
+      <td class="td-main">${p.numero}</td><td>${cli?.nombre||"—"}</td><td>${fmtDate(p.fecha)}</td>
+      <td style="font-weight:700">${fmtMoney(p.importe_total)}</td><td>${statusBadge(p.estado,PRES_ESTADOS)}</td>
+      <td onclick="event.stopPropagation()">${isAdmin()?`
+        <select class="btn btn-secondary btn-sm" onchange="updPresEstado('${p.id}',this.value)" style="font-size:11px">
+          ${Object.entries(PRES_ESTADOS).map(([k,v])=>`<option value="${k}" ${p.estado===k?"selected":""}>${v.label}</option>`).join("")}
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="showPresModal('${p.id}')">✏️</button>
+        ${p.estado==="aceptado"&&!p.convertido_ot_id?`<button class="btn btn-green btn-sm" onclick="convertirAOT('${p.id}')">→ OT</button>`:""}
+      `:""}</td>
+    </tr>`;}).join("")}
+  </tbody></table></div>`;
+}
+function showPresModal(id=null){
+  const p=id?APP.data.presupuestos.find(x=>x.id===id):{};
+  const v=k=>String(p?.[k]||"").replace(/"/g,"&quot;");
+  openModal(`<div class="overlay"><div class="modal">
+    <div class="modal-header"><div class="modal-title">${id?"Editar presupuesto":"Nuevo presupuesto"}</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
+    <div class="modal-body"><div class="form-grid form-grid-2">
+      <div class="form-group"><label class="form-label">Número *</label><input class="form-control" id="pr-num" value="${v("numero")}" placeholder="PRES-2025-001"/></div>
+      <div class="form-group"><label class="form-label">Cliente</label>
+        <select class="form-control" id="pr-cli"><option value="">—</option>${APP.data.clientes.map(c=>`<option value="${c.id}" ${p.cliente_id===c.id?"selected":""}>${c.nombre}</option>`).join("")}</select></div>
+      <div class="form-group"><label class="form-label">Fecha</label><input class="form-control" type="date" id="pr-fecha" value="${v("fecha")||new Date().toISOString().slice(0,10)}"/></div>
+      <div class="form-group"><label class="form-label">Validez (días)</label><input class="form-control" type="number" id="pr-val" value="${v("validez_dias")||30}"/></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Descripción</label><textarea class="form-control" id="pr-desc">${p?.descripcion||""}</textarea></div>
+      <div class="form-group"><label class="form-label">Base imponible €</label><input class="form-control" type="number" id="pr-base" value="${v("importe_base")||0}" oninput="calcPT()"/></div>
+      <div class="form-group"><label class="form-label">IVA %</label><input class="form-control" type="number" id="pr-iva" value="${v("iva")||21}" oninput="calcPT()"/></div>
+      <div class="form-group"><label class="form-label">Total</label><input class="form-control" id="pr-total" readonly/></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notas</label><textarea class="form-control" id="pr-notas">${p?.notas||""}</textarea></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="savePres('${id||""}')">${id?"Guardar":"Crear"}</button></div>
+  </div></div>`);calcPT();
+}
+function calcPT(){const base=Number(document.getElementById("pr-base")?.value||0);const iva=Number(document.getElementById("pr-iva")?.value||21);const el=document.getElementById("pr-total");if(el)el.value=fmtMoney(base*(1+iva/100));}
+async function savePres(id){
+  const base=Number(document.getElementById("pr-base").value||0);const iva=Number(document.getElementById("pr-iva").value||21);
+  const data={numero:document.getElementById("pr-num").value.trim(),cliente_id:document.getElementById("pr-cli").value||null,fecha:document.getElementById("pr-fecha").value,validez_dias:Number(document.getElementById("pr-val").value||30),descripcion:document.getElementById("pr-desc").value,importe_base:base,iva,importe_total:base*(1+iva/100),notas:document.getElementById("pr-notas").value,updated_at:new Date().toISOString()};
+  if(!data.numero){toast("El número es obligatorio","warn");return;}
+  try{
+    if(id){await sbUpd("presupuestos",id,data);const i=APP.data.presupuestos.findIndex(p=>p.id===id);if(i>=0)APP.data.presupuestos[i]={...APP.data.presupuestos[i],...data};}
+    else{const[n]=await sbIns("presupuestos",[data]);APP.data.presupuestos.unshift(n);}
+    toast("Guardado ✓");closeModal();renderPresupuestos();
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+async function updPresEstado(id,estado){
+  try{await sbUpd("presupuestos",id,{estado});const p=APP.data.presupuestos.find(x=>x.id===id);if(p)p.estado=estado;toast("Estado actualizado ✓");renderPresupuestos();}
+  catch{toast("Error","err");}
+}
+async function convertirAOT(presId){
+  const p=APP.data.presupuestos.find(x=>x.id===presId);const cli=APP.data.clientes.find(c=>c.id===p?.cliente_id);
+  const num=prompt("Número para la nueva OT:");if(!num)return;
+  try{
+    const[ot]=await sbIns("ots",[{numero:num,descripcion:p.descripcion,cliente_id:p.cliente_id||null,estado:"pendiente",presupuesto_id:presId,campos_hoja:{cliente:cli?.nombre||""}}]);
+    await sbUpd("presupuestos",presId,{convertido_ot_id:ot.id});
+    APP.data.ots.unshift(ot);toast("OT-"+num+" creada ✓");navigate("ot-detail",{id:ot.id});
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+
+// FACTURAS
+function renderFacturas(){
+  const {facturas,clientes}=APP.data;
+  const cobrado=facturas.filter(f=>f.estado==="cobrada").reduce((s,f)=>s+Number(f.total||0),0);
+  const pendiente=facturas.filter(f=>f.estado==="emitida").reduce((s,f)=>s+Number(f.total||0),0);
+  document.getElementById("content").innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">Facturación</div></div>
+    ${isAdmin()?`<button class="btn btn-primary" onclick="showFactModal()">${svgI('<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>')} Nueva factura</button>`:""}
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card" style="border-color:var(--green)"><div class="stat-num" style="color:var(--green);font-size:18px">${fmtMoney(cobrado)}</div><div class="stat-label">Cobrado</div></div>
+    <div class="stat-card" style="border-color:var(--amber)"><div class="stat-num" style="color:var(--amber);font-size:18px">${fmtMoney(pendiente)}</div><div class="stat-label">Pendiente cobro</div></div>
+    <div class="stat-card"><div class="stat-num">${facturas.length}</div><div class="stat-label">Facturas totales</div></div>
+  </div>
+  <div class="table-wrap"><table><thead><tr><th>Número</th><th>Cliente</th><th>OT</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Vencimiento</th>${isAdmin()?"<th></th>":""}</tr></thead><tbody>
+  ${facturas.length===0?`<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text3)">Sin facturas</td></tr>`:
+  facturas.map(f=>{
+    const cli=clientes.find(c=>c.id===f.cliente_id);const ot=APP.data.ots.find(o=>o.id===f.ot_id);
+    const vencida=f.estado==="emitida"&&f.fecha_vencimiento&&new Date(f.fecha_vencimiento)<new Date();
+    return `<tr>
+      <td class="td-main">${f.numero}</td><td>${cli?.nombre||"—"}</td>
+      <td>${ot?`<span style="color:var(--primary);cursor:pointer" onclick="navigate('ot-detail',{id:'${ot.id}'})">${"OT-"+ot.numero}</span>`:"—"}</td>
+      <td>${fmtDate(f.fecha)}</td><td style="font-weight:700">${fmtMoney(f.total)}</td>
+      <td>${vencida?`<span class="badge badge-red">Vencida</span>`:statusBadge(f.estado,FACT_ESTADOS)}</td>
+      <td style="color:${vencida?"var(--red)":"inherit"}">${fmtDate(f.fecha_vencimiento)}</td>
+      ${isAdmin()?`<td onclick="event.stopPropagation()">
+        <select class="btn btn-secondary btn-sm" onchange="updFactEstado('${f.id}',this.value)" style="font-size:11px">
+          ${Object.entries(FACT_ESTADOS).map(([k,v])=>`<option value="${k}" ${f.estado===k?"selected":""}>${v.label}</option>`).join("")}
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="showFactModal('${f.id}')">✏️</button>
+      </td>`:""}
+    </tr>`;}).join("")}
+  </tbody></table></div>`;
+}
+function showFactModal(id=null){
+  const f=id?APP.data.facturas.find(x=>x.id===id):{};
+  const v=k=>String(f?.[k]||"").replace(/"/g,"&quot;");
+  openModal(`<div class="overlay"><div class="modal">
+    <div class="modal-header"><div class="modal-title">${id?"Editar factura":"Nueva factura"}</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
+    <div class="modal-body"><div class="form-grid form-grid-2">
+      <div class="form-group"><label class="form-label">Número *</label><input class="form-control" id="fc-num" value="${v("numero")}" placeholder="F-2025-001"/></div>
+      <div class="form-group"><label class="form-label">Cliente</label>
+        <select class="form-control" id="fc-cli"><option value="">—</option>${APP.data.clientes.map(c=>`<option value="${c.id}" ${f.cliente_id===c.id?"selected":""}>${c.nombre}</option>`).join("")}</select></div>
+      <div class="form-group"><label class="form-label">OT asociada</label>
+        <select class="form-control" id="fc-ot"><option value="">—</option>${APP.data.ots.map(o=>`<option value="${o.id}" ${f.ot_id===o.id?"selected":""}>${"OT-"+o.numero}</option>`).join("")}</select></div>
+      <div class="form-group"><label class="form-label">Fecha</label><input class="form-control" type="date" id="fc-fecha" value="${v("fecha")||new Date().toISOString().slice(0,10)}"/></div>
+      <div class="form-group"><label class="form-label">Vencimiento</label><input class="form-control" type="date" id="fc-venc" value="${v("fecha_vencimiento")}"/></div>
+      <div class="form-group"><label class="form-label">Base imponible €</label><input class="form-control" type="number" id="fc-base" value="${v("base_imponible")||0}" oninput="calcFT()"/></div>
+      <div class="form-group"><label class="form-label">IVA %</label><input class="form-control" type="number" id="fc-iva" value="${v("iva")||21}" oninput="calcFT()"/></div>
+      <div class="form-group"><label class="form-label">Total</label><input class="form-control" id="fc-total" readonly/></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notas</label><textarea class="form-control" id="fc-notas">${f?.notas||""}</textarea></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveFact('${id||""}')">${id?"Guardar":"Crear"}</button></div>
+  </div></div>`);calcFT();
+}
+function calcFT(){const base=Number(document.getElementById("fc-base")?.value||0);const iva=Number(document.getElementById("fc-iva")?.value||21);const el=document.getElementById("fc-total");if(el)el.value=fmtMoney(base*(1+iva/100));}
+async function saveFact(id){
+  const base=Number(document.getElementById("fc-base").value||0);const iva=Number(document.getElementById("fc-iva").value||21);
+  const data={numero:document.getElementById("fc-num").value.trim(),cliente_id:document.getElementById("fc-cli").value||null,ot_id:document.getElementById("fc-ot").value||null,fecha:document.getElementById("fc-fecha").value,fecha_vencimiento:document.getElementById("fc-venc").value||null,base_imponible:base,iva,total:base*(1+iva/100),notas:document.getElementById("fc-notas").value,updated_at:new Date().toISOString()};
+  if(!data.numero){toast("El número es obligatorio","warn");return;}
+  try{
+    if(id){await sbUpd("facturas",id,data);const i=APP.data.facturas.findIndex(f=>f.id===id);if(i>=0)APP.data.facturas[i]={...APP.data.facturas[i],...data};}
+    else{const[n]=await sbIns("facturas",[{...data,estado:"borrador"}]);APP.data.facturas.unshift(n);}
+    toast("Guardado ✓");closeModal();renderFacturas();
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+async function updFactEstado(id,estado){
+  try{const upd={estado,updated_at:new Date().toISOString()};if(estado==="cobrada")upd.fecha_cobro=new Date().toISOString().slice(0,10);await sbUpd("facturas",id,upd);const f=APP.data.facturas.find(x=>x.id===id);if(f)Object.assign(f,upd);toast("Estado actualizado ✓");renderFacturas();}
+  catch{toast("Error","err");}
+}
+
+// CATÁLOGO
+function renderCatalogo(){
+  const cats=APP.data.catalogo;
+  document.getElementById("content").innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">Catálogo de materiales</div><div class="page-sub">${cats.length} materiales</div></div>
+    ${isAdmin()?`<button class="btn btn-primary" onclick="showCatModal()">${svgI('<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>')} Nuevo material</button>`:""}
+  </div>
+  <div class="table-wrap"><table><thead><tr><th></th><th>Código</th><th>Nombre</th><th>Ref. fab.</th><th>Fase pred.</th><th>Elementos</th>${isAdmin()?"<th></th>":""}</tr></thead><tbody>
+  ${cats.length===0?`<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text3)">Catálogo vacío</td></tr>`:
+  cats.map(c=>`<tr>
+    <td style="width:50px">${c.foto_url?`<img src="${c.foto_url}" style="width:38px;height:38px;border-radius:8px;object-fit:cover"/>`:`<div style="width:38px;height:38px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`}</td>
+    <td style="font-family:monospace;font-size:12px">${c.codigo||"—"}</td>
+    <td class="td-main">${c.nombre}</td>
+    <td style="font-size:12px;color:var(--text3)">${c.ref_fabricante||"—"}</td>
+    <td>${c.fase_predeterminada?`<span class="badge badge-blue">${PHASES.find(p=>p.id===c.fase_predeterminada)?.label||c.fase_predeterminada}</span>`:"—"}</td>
+    <td><span class="badge badge-gray">${(c.elementos||[]).length} elem.</span></td>
+    ${isAdmin()?`<td>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="showCatModal('${c.id}')">✏️</button>
+      <button class="btn btn-ghost btn-icon btn-sm" style="color:var(--red)" onclick="deleteCatItem('${c.id}')">🗑️</button>
+    </td>`:""}
+  </tr>`).join("")}
+  </tbody></table></div>`;
+}
+
+function showCatModal(id=null){
+  const c=id?APP.data.catalogo.find(x=>x.id===id):{};
+  window._catElems=JSON.parse(JSON.stringify(c?.elementos||[]));
+  window._catId=id;
+  const v=k=>String(c?.[k]||"").replace(/"/g,"&quot;");
+  openModal(`<div class="overlay"><div class="modal" style="max-width:620px">
+    <div class="modal-header"><div class="modal-title">${id?"Editar material":"Nuevo material"}</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px">
+        <div id="cat-foto-prev" style="width:70px;height:70px;border-radius:10px;background:var(--bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;border:1.5px solid var(--border)">
+          ${c?.foto_url?`<img id="cat-foto-img" src="${c.foto_url}" style="width:100%;height:100%;object-fit:cover"/>`:"📦"}
+        </div>
+        <div style="flex:1">
+          <label class="form-label">Foto del material</label>
+          <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:6px" onclick="catFoto()">
+            ${window.innerWidth<700?"📸 Hacer foto":"📁 Cargar foto"}
+          </button>
+          <input class="form-control" id="cat-foto-url" placeholder="o pega URL https://..." value="${v("foto_url")}" oninput="prevCatFoto(this.value)"/>
+        </div>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Código interno</label><input class="form-control" id="cat-cod" value="${v("codigo")}" placeholder="MAT-001"/></div>
+        <div class="form-group"><label class="form-label">Nombre *</label><input class="form-control" id="cat-nombre" value="${v("nombre")}" placeholder="Brazo hidráulico"/></div>
+        <div class="form-group"><label class="form-label">Ref. fabricante</label><input class="form-control" id="cat-ref" value="${v("ref_fabricante")}"/></div>
+        <div class="form-group"><label class="form-label">Fase predeterminada</label>
+          <select class="form-control" id="cat-fase"><option value="">Sin fase</option>
+          ${PHASES.map(p=>`<option value="${p.id}" ${c?.fase_predeterminada===p.id?"selected":""}>${p.label}</option>`).join("")}</select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notas</label><textarea class="form-control" id="cat-notas">${c?.notas||""}</textarea></div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:8px">Elementos necesarios</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+          ${CONSUMIBLE_TIPOS.map(t=>`<button class="btn btn-secondary btn-sm" onclick="addCatElem('${t}')">+ ${t}</button>`).join("")}
+        </div>
+        <div id="cat-elems-list"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCatItem('${id||""}')">${id?"Guardar":"Crear"}</button>
+    </div>
+  </div></div>`);
+  renderCatElems();
+}
+
+function prevCatFoto(url){const p=document.getElementById("cat-foto-prev");if(!p)return;p.innerHTML=url?`<img src="${url}" style="width:100%;height:100%;object-fit:cover"/>`:"📦";}
+function catFoto(){
+  const inp=document.getElementById("cam-input");if(!inp)return;
+  if(window.innerWidth<700)inp.setAttribute("capture","environment");else inp.removeAttribute("capture");
+  inp.onchange=function(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(ev){document.getElementById("cat-foto-url").value=ev.target.result;prevCatFoto(ev.target.result);};reader.readAsDataURL(file);inp.value="";};
+  inp.click();
+}
+function addCatElem(tipo){window._catElems.push({id:Date.now(),tipo,ref:"",desc:"",qty:1});renderCatElems();}
+function renderCatElems(){
+  const list=document.getElementById("cat-elems-list");if(!list)return;
+  if(!window._catElems.length){list.innerHTML=`<div style="color:var(--text3);font-size:13px;text-align:center;padding:12px">Sin elementos. Añade usando los botones de arriba.</div>`;return;}
+  const byTipo={};window._catElems.forEach(e=>{if(!byTipo[e.tipo])byTipo[e.tipo]=[];byTipo[e.tipo].push(e);});
+  list.innerHTML=Object.entries(byTipo).map(([tipo,items])=>`
+    <div style="margin-bottom:12px">
+      <div style="font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;margin-bottom:6px">${tipo}</div>
+      <div class="elem-table">
+        <div class="elem-hdr" style="grid-template-columns:110px 1fr 60px 32px"><div>Referencia</div><div>Descripción</div><div style="text-align:right">Cant.</div><div></div></div>
+        ${items.map(e=>`
+          <div class="elem-row" style="grid-template-columns:110px 1fr 60px 32px">
+            <input class="form-control" style="padding:5px 7px;font-size:12px;font-family:monospace" value="${e.ref||""}" placeholder="M8x40" oninput="updCatElem(${e.id},'ref',this.value)"/>
+            <input class="form-control" style="padding:5px 7px;font-size:12px" value="${e.desc||""}" placeholder="Descripción" oninput="updCatElem(${e.id},'desc',this.value)"/>
+            <input class="form-control" style="padding:5px 7px;font-size:12px;text-align:right" type="number" min="1" value="${e.qty||1}" oninput="updCatElem(${e.id},'qty',Number(this.value))"/>
+            <button class="btn btn-ghost btn-icon" style="color:var(--red);padding:4px" onclick="delCatElem(${e.id})">${svgI('<path d="M3 6h18M8 6V4h8v2M5 6v14a2 2 0 002 2h10a2 2 0 002-2V6" stroke="currentColor" stroke-width="1.5"/>',13)}</button>
+          </div>`).join("")}
+      </div>
+    </div>`).join("");
+}
+function updCatElem(id,field,val){const e=window._catElems.find(x=>x.id===id);if(e)e[field]=val;}
+function delCatElem(id){window._catElems=window._catElems.filter(e=>e.id!==id);renderCatElems();}
+async function saveCatItem(id){
+  const data={codigo:document.getElementById("cat-cod").value.trim(),nombre:document.getElementById("cat-nombre").value.trim(),ref_fabricante:document.getElementById("cat-ref").value.trim(),fase_predeterminada:document.getElementById("cat-fase").value||null,notas:document.getElementById("cat-notas").value,foto_url:document.getElementById("cat-foto-url").value,elementos:window._catElems,updated_at:new Date().toISOString()};
+  if(!data.nombre){toast("El nombre es obligatorio","warn");return;}
+  try{
+    if(id){await sbUpd("catalogo_materiales",id,data);const i=APP.data.catalogo.findIndex(c=>c.id===id);if(i>=0)APP.data.catalogo[i]={...APP.data.catalogo[i],...data};}
+    else{const[n]=await sbIns("catalogo_materiales",[{...data,activo:true}]);APP.data.catalogo.unshift(n);}
+    toast("Material guardado ✓");closeModal();renderCatalogo();
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+async function deleteCatItem(id){confirm2("¿Eliminar este material del catálogo?",async()=>{try{await sbDel("catalogo_materiales",id);APP.data.catalogo=APP.data.catalogo.filter(c=>c.id!==id);toast("Eliminado");renderCatalogo();}catch(e){toast("Error","err");}});}
+
+// INVENTARIO
+function renderInventario(){
+  const {inventario}=APP.data;
+  const stockBajo=inventario.filter(i=>Number(i.stock_actual)<=Number(i.stock_minimo)&&Number(i.stock_minimo)>0);
+  document.getElementById("content").innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">Inventario</div><div class="page-sub">${inventario.length} referencias · ${stockBajo.length} con stock bajo</div></div>
+    ${isAdmin()?`<button class="btn btn-primary" onclick="showInvModal()">${svgI('<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>')} Añadir referencia</button>`:""}
+  </div>
+  ${stockBajo.length>0?`<div style="background:var(--red-light);border:1px solid var(--red);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px">
+    <div style="font-weight:700;color:var(--red);margin-bottom:8px">⚠️ ${stockBajo.length} referencias con stock bajo</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${stockBajo.map(i=>`<span class="badge badge-red">${i.referencia}: ${i.stock_actual} ${i.unidad}</span>`).join("")}</div>
+  </div>`:""}
+  <div class="table-wrap"><table><thead><tr><th>Referencia</th><th>Descripción</th><th>Tipo</th><th>Stock actual</th><th>Mínimo</th><th>Unidad</th><th>Proveedor</th>${isAdmin()?"<th></th>":""}</tr></thead><tbody>
+  ${inventario.length===0?`<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text3)">Sin referencias</td></tr>`:
+  inventario.map(i=>{const bajo=Number(i.stock_actual)<=Number(i.stock_minimo)&&Number(i.stock_minimo)>0;
+    return `<tr style="${bajo?"background:var(--red-light)":""}">
+      <td style="font-family:monospace;font-weight:700">${i.referencia}</td>
+      <td>${i.descripcion||"—"}</td>
+      <td><span class="badge badge-gray" style="font-size:10px">${i.tipo}</span></td>
+      <td style="font-weight:700;color:${bajo?"var(--red)":"inherit"}">${i.stock_actual}</td>
+      <td style="color:var(--text3)">${i.stock_minimo}</td>
+      <td>${i.unidad}</td>
+      <td style="font-size:12px;color:var(--text3)">${i.proveedor||"—"}</td>
+      ${isAdmin()?`<td>
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="showInvModal('${i.id}')">✏️</button>
+        <button class="btn btn-ghost btn-icon btn-sm" style="color:var(--red)" onclick="delInv('${i.id}')">🗑️</button>
+      </td>`:""}
+    </tr>`;}).join("")}
+  </tbody></table></div>`;
+}
+function showInvModal(id=null){
+  const item=id?APP.data.inventario.find(x=>x.id===id):{};
+  const v=k=>String(item?.[k]??("")).replace(/"/g,"&quot;");
+  openModal(`<div class="overlay"><div class="modal">
+    <div class="modal-header"><div class="modal-title">${id?"Editar referencia":"Nueva referencia"}</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
+    <div class="modal-body"><div class="form-grid form-grid-2">
+      <div class="form-group"><label class="form-label">Referencia *</label><input class="form-control" id="inv-ref" value="${v("referencia")}" placeholder="M8x40"/></div>
+      <div class="form-group"><label class="form-label">Tipo</label>
+        <select class="form-control" id="inv-tipo">${CONSUMIBLE_TIPOS.map(t=>`<option value="${t}" ${item?.tipo===t?"selected":""}>${t}</option>`).join("")}</select></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Descripción</label><input class="form-control" id="inv-desc" value="${v("descripcion")}"/></div>
+      <div class="form-group"><label class="form-label">Stock actual</label><input class="form-control" type="number" id="inv-stock" value="${v("stock_actual")||0}"/></div>
+      <div class="form-group"><label class="form-label">Stock mínimo</label><input class="form-control" type="number" id="inv-min" value="${v("stock_minimo")||0}"/></div>
+      <div class="form-group"><label class="form-label">Unidad</label><input class="form-control" id="inv-uni" value="${v("unidad")||"uds"}"/></div>
+      <div class="form-group"><label class="form-label">Precio unitario €</label><input class="form-control" type="number" id="inv-precio" value="${v("precio_unitario")||0}"/></div>
+      <div class="form-group"><label class="form-label">Proveedor</label><input class="form-control" id="inv-prov" value="${v("proveedor")}"/></div>
+      <div class="form-group"><label class="form-label">Ubicación</label><input class="form-control" id="inv-ubic" value="${v("ubicacion")}"/></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notas</label><textarea class="form-control" id="inv-notas">${item?.notas||""}</textarea></div>
+    </div></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveInv('${id||""}')">${id?"Guardar":"Crear"}</button></div>
+  </div></div>`);
+}
+async function saveInv(id){
+  const data={referencia:document.getElementById("inv-ref").value.trim(),tipo:document.getElementById("inv-tipo").value,descripcion:document.getElementById("inv-desc").value,stock_actual:Number(document.getElementById("inv-stock").value||0),stock_minimo:Number(document.getElementById("inv-min").value||0),unidad:document.getElementById("inv-uni").value||"uds",precio_unitario:Number(document.getElementById("inv-precio").value||0),proveedor:document.getElementById("inv-prov").value,ubicacion:document.getElementById("inv-ubic").value,notas:document.getElementById("inv-notas").value,updated_at:new Date().toISOString()};
+  if(!data.referencia){toast("La referencia es obligatoria","warn");return;}
+  try{
+    if(id){await sbUpd("inventario",id,data);const i=APP.data.inventario.findIndex(x=>x.id===id);if(i>=0)APP.data.inventario[i]={...APP.data.inventario[i],...data};}
+    else{const[n]=await sbIns("inventario",[data]);APP.data.inventario.push(n);APP.data.inventario.sort((a,b)=>a.referencia.localeCompare(b.referencia));}
+    toast("Guardado ✓");closeModal();renderInventario();
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+async function delInv(id){confirm2("¿Eliminar esta referencia?",async()=>{try{await sbDel("inventario",id);APP.data.inventario=APP.data.inventario.filter(i=>i.id!==id);toast("Eliminado");renderInventario();}catch(e){toast("Error","err");}});}
+
+// INFORMES
+function renderInformes(){
+  const {ots,facturas,clientes}=APP.data;
+  const porEstado={};ots.forEach(o=>{porEstado[o.estado]=(porEstado[o.estado]||0)+1;});
+  const now=new Date();
+  const facMes=facturas.filter(f=>{if(f.estado!=="cobrada")return false;const d=new Date(f.fecha||f.created_at);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((s,f)=>s+Number(f.total||0),0);
+  const top5=clientes.map(c=>({nombre:c.nombre,ots:ots.filter(o=>o.cliente_id===c.id).length,fact:facturas.filter(f=>f.cliente_id===c.id&&f.estado==="cobrada").reduce((s,f)=>s+Number(f.total||0),0)})).sort((a,b)=>b.fact-a.fact).slice(0,5);
+  document.getElementById("content").innerHTML=`
+  <div class="page-header"><div class="page-title">Estadísticas</div></div>
+  <div class="stats-grid">
+    <div class="stat-card" style="border-color:var(--primary)"><div class="stat-num" style="color:var(--primary)">${ots.length}</div><div class="stat-label">OTs totales</div></div>
+    <div class="stat-card" style="border-color:var(--green)"><div class="stat-num" style="color:var(--green);font-size:18px">${fmtMoney(facMes)}</div><div class="stat-label">Facturado este mes</div></div>
+    <div class="stat-card"><div class="stat-num">${clientes.length}</div><div class="stat-label">Clientes</div></div>
+    <div class="stat-card" style="border-color:var(--red)"><div class="stat-num" style="color:var(--red)">${ots.filter(o=>o.prioridad==="urgente").length}</div><div class="stat-label">OTs urgentes</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="card">
+      <div class="card-title">OTs por estado</div>
+      ${Object.entries(OT_ESTADOS).map(([k,v])=>{const n=porEstado[k]||0;const pct=ots.length?Math.round(n/ots.length*100):0;
+        return `<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${statusBadge(k,OT_ESTADOS)}</span><span style="font-weight:700">${n} (${pct}%)</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:var(--primary)"></div></div>
+        </div>`;}).join("")}
+    </div>
+    <div class="card">
+      <div class="card-title">Top 5 clientes por facturación</div>
+      ${top5.length===0?`<div class="empty" style="padding:20px"><div class="empty-title">Sin datos</div></div>`:
+      top5.map((c,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
+          <div style="flex:1"><div style="font-weight:600;font-size:13px">${c.nombre}</div><div style="font-size:11px;color:var(--text3)">${c.ots} OTs</div></div>
+          <div style="font-weight:700;font-size:13px">${fmtMoney(c.fact)}</div>
+        </div>`).join("")}
+    </div>
+  </div>`;
+}
+
+// CONFIG
+function renderConfig(){
+  const key=localStorage.getItem("foima_anthropic_key")||"";
+  document.getElementById("content").innerHTML=`
+  <div class="page-header"><div class="page-title">Configuración</div></div>
+  <div class="card">
+    <div class="card-title">API de Anthropic (escáner de hojas)</div>
+    <div class="form-group">
+      <label class="form-label">API Key</label>
+      <input class="form-control" type="password" id="cfg-key" value="${key}" placeholder="sk-ant-..."/>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">Obtén tu key en console.anthropic.com → API Keys. Coste aproximado 0.003€/hoja escaneada.</div>
+    </div>
+    <button class="btn btn-primary" onclick="saveCfg()">Guardar configuración</button>
+  </div>
+  ${isAdmin()?`<div class="card">
+    <div class="card-title">Usuarios</div>
+    <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>PIN</th><th>Rol</th><th></th></tr></thead><tbody>
+    ${APP.data.usuarios.map(u=>`<tr>
+      <td class="td-main">${u.nombre}</td>
+      <td style="font-family:monospace">••••</td>
+      <td>${u.rol==="admin"?`<span class="badge badge-amber">Admin</span>`:`<span class="badge badge-gray">Viewer</span>`}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="showUsrModal('${u.id}')">✏️</button></td>
+    </tr>`).join("")}
+    </tbody></table></div>
+    <button class="btn btn-secondary" style="margin-top:10px" onclick="showUsrModal()">+ Nuevo usuario</button>
+  </div>`:""}
+  <div class="card">
+    <div class="card-title">Base de datos Supabase</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Conectado a ${SB_URL}</div>
+    <button class="btn btn-secondary" onclick="reloadData()">🔄 Recargar datos</button>
+  </div>`;
+}
+function saveCfg(){const key=document.getElementById("cfg-key").value.trim();localStorage.setItem("foima_anthropic_key",key);toast("Configuración guardada ✓");}
+async function reloadData(){toast("Recargando...");await loadAllData();toast("Datos actualizados ✓");}
+
+function showUsrModal(id=null){
+  const u=id?APP.data.usuarios.find(x=>x.id===id):{};
+  openModal(`<div class="overlay"><div class="modal" style="max-width:360px">
+    <div class="modal-header"><div class="modal-title">${id?"Editar usuario":"Nuevo usuario"}</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Nombre *</label><input class="form-control" id="usr-n" value="${u?.nombre||""}"/></div>
+      <div class="form-group"><label class="form-label">PIN (4 dígitos)</label><input class="form-control" id="usr-p" type="password" maxlength="4" placeholder="••••"/></div>
+      <div class="form-group"><label class="form-label">Rol</label>
+        <select class="form-control" id="usr-r">
+          <option value="viewer" ${u?.rol==="viewer"?"selected":""}>Viewer (solo lectura)</option>
+          <option value="admin" ${u?.rol==="admin"?"selected":""}>Admin (edición completa)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveUsr('${id||""}')">${id?"Guardar":"Crear"}</button></div>
+  </div></div>`);
+}
+async function saveUsr(id){
+  const nombre=document.getElementById("usr-n").value.trim();const pin=document.getElementById("usr-p").value;const rol=document.getElementById("usr-r").value;
+  if(!nombre){toast("El nombre es obligatorio","warn");return;}
+  const data={nombre,rol};if(pin)data.pin=pin;
+  try{
+    if(id){await sbUpd("usuarios",id,data);const i=APP.data.usuarios.findIndex(u=>u.id===id);if(i>=0)APP.data.usuarios[i]={...APP.data.usuarios[i],...data};}
+    else{if(!pin||pin.length!==4){toast("El PIN debe tener 4 dígitos","warn");return;}const[n]=await sbIns("usuarios",[{...data,activo:true}]);APP.data.usuarios.push(n);}
+    toast("Usuario guardado ✓");closeModal();renderConfig();
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+
+// CLAUDE VISION
+async function analizarHoja(b64,mime){
+  const key=localStorage.getItem("foima_anthropic_key")||"";
+  if(!key){toast("Configura la API key en Configuración","warn");return null;}
+  const campos=["fecha","revision","cliente","otIlave","contacto","oferta","telefono","email","numeroPedido","marcaModelo","bastidor","dee","voltaje","fechaLleg","equipo","tipoCarro","dimPlat","tipoSusp","cajasHerr","bidon","extintor","modeloCabr","montajeCabr","pintCabina","pintCarro","pintSch","grupo","ptoBomba","telemando","rotativo","textoSenal","fijacion","trilogy","tomaBat","focos","enganche","pina","bArrastre","soporteConos","barraMotos","calzos","tresEje","garras","carroMotos","gato","lucesMag","polea","soporteGato","eslingas","carrosSop","visera","obs1","obs2","obsLibre","comercial","revisadoPor","aprobadoPor","plazo"];
+  const prompt=`Analiza esta hoja de pedido FOIMA (FO-023) y extrae todos los campos visibles.\nDevuelve ÚNICAMENTE un JSON válido con estos campos (vacío "" si no se ve):\n${campos.map(f=>'"'+f+'"').join(", ")}\nSOLO JSON, sin texto adicional ni markdown.`;
+  try{
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:mime,data:b64}},{type:"text",text:prompt}]}]})});
+    if(!res.ok){const e=await res.json();toast("Error API: "+(e.error?.message||res.status),"err");return null;}
+    const data=await res.json();const text=data.content?.[0]?.text||"";
+    return JSON.parse(text.replace(/```json|```/g,"").trim());
+  }catch(e){toast("Error al analizar: "+e.message,"err");return null;}
+}
+
+// BOOT
+initLogin();
+</script>
+</body>
+</html>
