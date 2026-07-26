@@ -216,7 +216,7 @@ const sbIns=(t,d)=>sbReq(t,"POST",d);
 const sbUpd=(t,id,d)=>sbReq(t,"PATCH",d,"id=eq."+id);
 const sbDel=(t,id)=>sbReq(t,"DELETE",null,"id=eq."+id);
 
-let APP={user:null,page:"dashboard",data:{clientes:[],ots:[],presupuestos:[],catalogo:[],inventario:[],facturas:[],usuarios:[]},filters:{},params:{}};
+let APP={user:null,page:"dashboard",data:{clientes:[],ots:[],presupuestos:[],catalogo:[],inventario:[],facturas:[],usuarios:[],elementos:[]},filters:{},params:{}};
 
 const PHASES=[
   {id:"premontaje",label:"Premontaje",color:"#1E40AF"},
@@ -224,7 +224,7 @@ const PHASES=[
   {id:"electricidad",label:"Electricidad",color:"#D97706"},
   {id:"acabados",label:"Acabados",color:"#7C3AED"},
 ];
-const CONSUMIBLE_TIPOS=["Tornillería","Consumible","Cable","Brida","Adhesivo/Silicona","Otro"];
+const CONSUMIBLE_TIPOS=["Tornillería","Tuerca","Arandela","Cable","Brida","Consumible","Adhesivo/Silicona","Otro"];
 const OT_ESTADOS={
   pendiente:{label:"Pendiente",cls:"badge-gray"},
   en_curso:{label:"En curso",cls:"badge-blue"},
@@ -256,6 +256,7 @@ const NAV=[
   {section:"Producción"},
   {id:"catalogo",label:"Catálogo",icon:'<path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 014 22V3a1 1 0 011-1h14a1 1 0 011 1v14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'},
   {id:"inventario",label:"Inventario",icon:'<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="currentColor" stroke-width="1.8"/>'},
+  {id:"elementos",label:"Elementos",icon:'<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="currentColor" stroke-width="1.8"/>'},
   {section:"Análisis"},
   {id:"informes",label:"Estadísticas",icon:'<line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="20" x2="12" y2="4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="6" y1="20" x2="6" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'},
   {section:"Sistema"},
@@ -361,15 +362,16 @@ async function loadApp(){
 }
 async function loadAllData(){
   try{
-    const [a,b,c,d,e,f]=await Promise.all([
+    const [a,b,c,d,e,f,g]=await Promise.all([
       sbGet("clientes","order=nombre"),
       sbGet("ots","order=created_at.desc"),
       sbGet("presupuestos","order=created_at.desc"),
       sbGet("catalogo_materiales","order=nombre&activo=eq.true"),
       sbGet("inventario","order=referencia"),
       sbGet("facturas","order=created_at.desc"),
+      sbGet("elementos_maestros","order=tipo,referencia"),
     ]);
-    APP.data={...APP.data,clientes:a,ots:b,presupuestos:c,catalogo:d,inventario:e,facturas:f};
+    APP.data={...APP.data,clientes:a,ots:b,presupuestos:c,catalogo:d,inventario:e,facturas:f,elementos:g};
   }catch(e){toast("Error cargando datos: "+e.message,"err");}
 }
 function renderNav(){
@@ -437,6 +439,7 @@ function navigate(page,params={}){
         case "facturas":renderFacturas();break;
         case "catalogo":renderCatalogo();break;
         case "inventario":renderInventario();break;
+        case "elementos":renderElementos();break;
         case "informes":renderInformes();break;
         case "config":renderConfig();break;
         default:c.innerHTML=`<div class="empty"><div class="empty-icon">🚧</div><div class="empty-title">En construcción</div></div>`;
@@ -1182,14 +1185,15 @@ function renderCatalogo(){
 function showCatModal(id=null){
   const c=id?APP.data.catalogo.find(x=>x.id===id):{};
   window._catElems=JSON.parse(JSON.stringify(c?.elementos||[]));
+  window._catFases=JSON.parse(JSON.stringify(c?.fases||[]));
   window._catId=id;
   const v=k=>String(c?.[k]||"").replace(/"/g,"&quot;");
-  openModal(`<div class="overlay"><div class="modal" style="max-width:620px">
+  openModal(`<div class="overlay"><div class="modal" style="max-width:640px">
     <div class="modal-header"><div class="modal-title">${id?"Editar material":"Nuevo material"}</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px">
         <div id="cat-foto-prev" style="width:70px;height:70px;border-radius:10px;background:var(--bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;border:1.5px solid var(--border)">
-          ${c?.foto_url?`<img id="cat-foto-img" src="${c.foto_url}" style="width:100%;height:100%;object-fit:cover"/>`:"📦"}
+          ${c?.foto_url?`<img src="${c.foto_url}" style="width:100%;height:100%;object-fit:cover"/>`:"📦"}
         </div>
         <div style="flex:1">
           <label class="form-label">Foto del material</label>
@@ -1204,17 +1208,23 @@ function showCatModal(id=null){
       <div class="form-grid form-grid-2">
         <div class="form-group"><label class="form-label">Código interno</label><input class="form-control" id="cat-cod" value="${v("codigo")}" placeholder="MAT-001"/></div>
         <div class="form-group"><label class="form-label">Nombre *</label><input class="form-control" id="cat-nombre" value="${v("nombre")}" placeholder="Brazo hidráulico"/></div>
-        <div class="form-group"><label class="form-label">Ref. fabricante</label><input class="form-control" id="cat-ref" value="${v("ref_fabricante")}"/></div>
-        <div class="form-group"><label class="form-label">Fase predeterminada</label>
-          <select class="form-control" id="cat-fase"><option value="">Sin fase</option>
-          ${PHASES.map(p=>`<option value="${p.id}" ${c?.fase_predeterminada===p.id?"selected":""}>${p.label}</option>`).join("")}</select>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Ref. fabricante</label><input class="form-control" id="cat-ref" value="${v("ref_fabricante")}"/></div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Fases donde aplica (selección múltiple)</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+            ${PHASES.map(p=>`<label style="display:flex;align-items:center;gap:6px;padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;user-select:none" id="fase-lbl-${p.id}">
+              <input type="checkbox" id="cat-fase-${p.id}" value="${p.id}" ${(c?.fases||[]).includes(p.id)?"checked":""}
+                onchange="toggleCatFase('${p.id}')" style="width:16px;height:16px;accent-color:var(--primary)"/>
+              ${p.label}
+            </label>`).join("")}
+          </div>
         </div>
         <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notas</label><textarea class="form-control" id="cat-notas">${c?.notas||""}</textarea></div>
       </div>
       <div>
         <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:8px">Elementos necesarios</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-          ${CONSUMIBLE_TIPOS.map(t=>`<button class="btn btn-secondary btn-sm" onclick="addCatElem('${t}')">+ ${t}</button>`).join("")}
+          ${CONSUMIBLE_TIPOS.map(t=>`<button class="btn btn-secondary btn-sm" onclick="showElemSelector('${t}')">+ ${t}</button>`).join("")}
         </div>
         <div id="cat-elems-list"></div>
       </div>
@@ -1225,6 +1235,82 @@ function showCatModal(id=null){
     </div>
   </div></div>`);
   renderCatElems();
+  // Highlight selected phases
+  PHASES.forEach(p=>{
+    const lbl=document.getElementById("fase-lbl-"+p.id);
+    const chk=document.getElementById("cat-fase-"+p.id);
+    if(lbl&&chk&&chk.checked) lbl.style.borderColor="var(--primary)",lbl.style.background="var(--primary-light)";
+  });
+}
+
+function toggleCatFase(faseId){
+  const chk=document.getElementById("cat-fase-"+faseId);
+  const lbl=document.getElementById("fase-lbl-"+faseId);
+  if(!chk||!lbl) return;
+  if(chk.checked){lbl.style.borderColor="var(--primary)";lbl.style.background="var(--primary-light)";}
+  else{lbl.style.borderColor="var(--border)";lbl.style.background="";}
+  const i=window._catFases.indexOf(faseId);
+  if(chk.checked&&i===-1) window._catFases.push(faseId);
+  else if(!chk.checked&&i>=0) window._catFases.splice(i,1);
+}
+
+function showElemSelector(tipo){
+  const elems=APP.data.elementos.filter(e=>e.tipo===tipo);
+  // If no elements of this type yet, allow creating inline
+  const listHtml=elems.length===0
+    ?`<div class="empty" style="padding:20px"><div class="empty-icon">📋</div>
+       <div class="empty-title">Sin ${tipo} en la lista maestra</div>
+       <div class="empty-sub">Ve a la sección Elementos del menú para añadir referencias</div></div>`
+    :elems.map(e=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s"
+        onclick="addElemFromMaster(${JSON.stringify(e).replace(/"/g,'&quot;')},'${tipo}')"
+        onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+        <div style="flex:1">
+          <div style="font-family:monospace;font-weight:700;font-size:13px">${e.referencia}</div>
+          <div style="font-size:12px;color:var(--text3)">${e.descripcion||""} ${e.medida?("· "+e.medida):""}</div>
+        </div>
+        <span style="color:var(--primary);font-size:18px;font-weight:700">+</span>
+      </div>`).join("");
+
+  // Open a second layer modal (inline div overlay over the current modal)
+  const sel=document.createElement("div");
+  sel.id="elem-selector-overlay";
+  sel.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px";
+  sel.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius-lg);width:100%;max-width:460px;max-height:80vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+      <div style="font-weight:700;font-size:15px">Seleccionar ${tipo}</div>
+      <button class="btn btn-ghost btn-icon" onclick="document.getElementById('elem-selector-overlay').remove()">✕</button>
+    </div>
+    <div style="padding:10px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <input class="form-control" placeholder="Buscar referencia..." oninput="filterElemSel(this.value,'${tipo}')"/>
+    </div>
+    <div style="flex:1;overflow-y:auto" id="elem-sel-list">${listHtml}</div>
+  </div>`;
+  document.body.appendChild(sel);
+  sel.addEventListener("click",e=>{if(e.target===sel)sel.remove();});
+}
+
+function filterElemSel(q,tipo){
+  const elems=APP.data.elementos.filter(e=>e.tipo===tipo&&(!q||e.referencia.toLowerCase().includes(q.toLowerCase())||e.descripcion?.toLowerCase().includes(q.toLowerCase())));
+  document.getElementById("elem-sel-list").innerHTML=elems.length===0
+    ?`<div style="text-align:center;padding:20px;color:var(--text3)">Sin resultados</div>`
+    :elems.map(e=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer"
+        onclick="addElemFromMaster(${JSON.stringify(e).replace(/"/g,'&quot;')},'${tipo}')"
+        onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+        <div style="flex:1"><div style="font-family:monospace;font-weight:700;font-size:13px">${e.referencia}</div>
+        <div style="font-size:12px;color:var(--text3)">${e.descripcion||""}</div></div>
+        <span style="color:var(--primary);font-size:18px;font-weight:700">+</span>
+      </div>`).join("");
+}
+
+function addElemFromMaster(elem,tipo){
+  // Check not already added
+  const exists=window._catElems.find(e=>e.ref===elem.referencia&&e.tipo===tipo);
+  if(exists){toast("Ya está añadido","warn");return;}
+  window._catElems.push({id:Date.now(),tipo,ref:elem.referencia,desc:elem.descripcion||"",qty:1,elem_id:elem.id});
+  renderCatElems();
+  document.getElementById("elem-selector-overlay")?.remove();
+  toast(elem.referencia+" añadido ✓");
 }
 
 function prevCatFoto(url){const p=document.getElementById("cat-foto-prev");if(!p)return;p.innerHTML=url?`<img src="${url}" style="width:100%;height:100%;object-fit:cover"/>`:"📦";}
@@ -1267,7 +1353,7 @@ function renderCatElems(){
 function updCatElem(id,field,val){const e=window._catElems.find(x=>x.id===id);if(e)e[field]=val;}
 function delCatElem(id){window._catElems=window._catElems.filter(e=>e.id!==id);renderCatElems();}
 async function saveCatItem(id){
-  const data={codigo:document.getElementById("cat-cod").value.trim(),nombre:document.getElementById("cat-nombre").value.trim(),ref_fabricante:document.getElementById("cat-ref").value.trim(),fase_predeterminada:document.getElementById("cat-fase").value||null,notas:document.getElementById("cat-notas").value,foto_url:document.getElementById("cat-foto-url").value,elementos:window._catElems,updated_at:new Date().toISOString()};
+  const data={codigo:document.getElementById("cat-cod").value.trim(),nombre:document.getElementById("cat-nombre").value.trim(),ref_fabricante:document.getElementById("cat-ref").value.trim(),fases:window._catFases||[],notas:document.getElementById("cat-notas").value,foto_url:document.getElementById("cat-foto-url").value,elementos:window._catElems,updated_at:new Date().toISOString()};
   if(!data.nombre){toast("El nombre es obligatorio","warn");return;}
   try{
     if(id){await sbUpd("catalogo_materiales",id,data);const i=APP.data.catalogo.findIndex(c=>c.id===id);if(i>=0)APP.data.catalogo[i]={...APP.data.catalogo[i],...data};}
@@ -1339,6 +1425,90 @@ async function saveInv(id){
   }catch(e){toast("Error: "+e.message,"err");}
 }
 async function delInv(id){confirm2("¿Eliminar esta referencia?",async()=>{try{await sbDel("inventario",id);APP.data.inventario=APP.data.inventario.filter(i=>i.id!==id);toast("Eliminado");renderInventario();}catch(e){toast("Error","err");}});}
+
+// ELEMENTOS MAESTROS
+function renderElementos(){
+  const elems=APP.data.elementos;
+  const byTipo={};
+  CONSUMIBLE_TIPOS.forEach(t=>{byTipo[t]=elems.filter(e=>e.tipo===t);});
+  const activeTipo=APP.params?.elemTipo||CONSUMIBLE_TIPOS[0];
+  document.getElementById("content").innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">Elementos</div><div class="page-sub">${elems.length} referencias</div></div>
+    ${isAdmin()?`<button class="btn btn-primary" onclick="showElemModal(null,'${activeTipo}')">${svgI('<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>')} Añadir referencia</button>`:""}
+  </div>
+  <div class="filters">
+    ${CONSUMIBLE_TIPOS.map(t=>`<button class="filter-btn ${activeTipo===t?"active":""}" onclick="APP.params.elemTipo='${t}';renderElementos()">
+      ${t} <span style="margin-left:4px;opacity:.7">(${byTipo[t].length})</span>
+    </button>`).join("")}
+  </div>
+  <div class="table-wrap"><table><thead><tr>
+    <th>Referencia</th><th>Descripción</th><th>Medida</th><th>Material</th><th>Proveedor</th>${isAdmin()?"<th></th>":""}
+  </tr></thead><tbody>
+  ${byTipo[activeTipo].length===0?`<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">Sin referencias de ${activeTipo}</td></tr>`:
+  byTipo[activeTipo].map(e=>`<tr>
+    <td style="font-family:monospace;font-weight:700">${e.referencia}</td>
+    <td>${e.descripcion||"—"}</td>
+    <td style="font-size:12px">${e.medida||"—"}</td>
+    <td style="font-size:12px;color:var(--text3)">${e.material||"—"}</td>
+    <td style="font-size:12px;color:var(--text3)">${e.proveedor||"—"}</td>
+    ${isAdmin()?`<td>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="showElemModal('${e.id}','${e.tipo}')">✏️</button>
+      <button class="btn btn-ghost btn-icon btn-sm" style="color:var(--red)" onclick="delElem('${e.id}')">🗑️</button>
+    </td>`:""}
+  </tr>`).join("")}
+  </tbody></table></div>`;
+}
+
+function showElemModal(id=null, tipo=CONSUMIBLE_TIPOS[0]){
+  const e=id?APP.data.elementos.find(x=>x.id===id):{};
+  const v=k=>String(e?.[k]||"").replace(/"/g,"&quot;");
+  openModal(`<div class="overlay"><div class="modal" style="max-width:480px">
+    <div class="modal-header"><div class="modal-title">${id?"Editar referencia":"Nueva referencia"}</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
+    <div class="modal-body"><div class="form-grid form-grid-2">
+      <div class="form-group"><label class="form-label">Tipo</label>
+        <select class="form-control" id="el-tipo">
+          ${CONSUMIBLE_TIPOS.map(t=>`<option value="${t}" ${(e?.tipo||tipo)===t?"selected":""}>${t}</option>`).join("")}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Referencia *</label><input class="form-control" id="el-ref" value="${v("referencia")}" placeholder="M8x40 / RV-1.5 / ..."/></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Descripción</label><input class="form-control" id="el-desc" value="${v("descripcion")}" placeholder="Tornillo cabeza hexagonal galvanizado"/></div>
+      <div class="form-group"><label class="form-label">Medida / Calibre</label><input class="form-control" id="el-medida" value="${v("medida")}" placeholder="M8 · 40mm · 1.5mm²..."/></div>
+      <div class="form-group"><label class="form-label">Material</label><input class="form-control" id="el-material" value="${v("material")}" placeholder="Acero inox / Cobre..."/></div>
+      <div class="form-group"><label class="form-label">Proveedor</label><input class="form-control" id="el-prov" value="${v("proveedor")}"/></div>
+      <div class="form-group"><label class="form-label">Referencia proveedor</label><input class="form-control" id="el-refprov" value="${v("ref_proveedor")}"/></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notas</label><textarea class="form-control" id="el-notas">${e?.notas||""}</textarea></div>
+    </div></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveElem('${id||""}')">${id?"Guardar":"Crear"}</button>
+    </div>
+  </div></div>`);
+}
+
+async function saveElem(id){
+  const data={tipo:document.getElementById("el-tipo").value,referencia:document.getElementById("el-ref").value.trim(),descripcion:document.getElementById("el-desc").value,medida:document.getElementById("el-medida").value,material:document.getElementById("el-material").value,proveedor:document.getElementById("el-prov").value,ref_proveedor:document.getElementById("el-refprov").value,notas:document.getElementById("el-notas").value,updated_at:new Date().toISOString()};
+  if(!data.referencia){toast("La referencia es obligatoria","warn");return;}
+  try{
+    if(id){
+      await sbUpd("elementos_maestros",id,data);
+      const i=APP.data.elementos.findIndex(e=>e.id===id);
+      if(i>=0)APP.data.elementos[i]={...APP.data.elementos[i],...data};
+    } else {
+      const[n]=await sbIns("elementos_maestros",[data]);
+      APP.data.elementos.push(n);
+      APP.data.elementos.sort((a,b)=>a.referencia.localeCompare(b.referencia));
+    }
+    toast("Guardado ✓");closeModal();renderElementos();
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+
+async function delElem(id){
+  confirm2("¿Eliminar esta referencia?",async()=>{
+    try{await sbDel("elementos_maestros",id);APP.data.elementos=APP.data.elementos.filter(e=>e.id!==id);toast("Eliminado");renderElementos();}
+    catch(e){toast("Error","err");}
+  });
+}
 
 // INFORMES
 function renderInformes(){
