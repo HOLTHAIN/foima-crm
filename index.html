@@ -152,7 +152,7 @@ textarea.form-control{resize:vertical;min-height:80px}
   #main{padding-bottom:64px}
 }
 #bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);z-index:90;padding-bottom:env(safe-area-inset-bottom)}
-.bottom-nav-inner{display:grid;grid-template-columns:repeat(5,1fr);max-width:600px;margin:0 auto}
+.bottom-nav-inner{display:grid;grid-template-columns:repeat(6,1fr);max-width:700px;margin:0 auto}
 .bnav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border:none;background:none;font-size:9px;font-weight:500;color:var(--text3);cursor:pointer;font-family:inherit}
 .bnav-btn.active{color:var(--primary)}
 .bnav-btn svg{width:20px;height:20px}
@@ -168,7 +168,7 @@ textarea.form-control{resize:vertical;min-height:80px}
       <div class="login-logo-mark">F</div>
       <div class="login-title">FOIMA CRM</div>
       <div class="login-sub">Control de producción</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px">Build 26/07/2026 07:19</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px">Build 26/07/2026 08:07</div>
     </div>
     <div class="user-selector" id="user-selector"></div>
     <div class="pin-wrap" id="pin-display"></div>
@@ -370,7 +370,7 @@ async function loadAllData(){
       sbGet("catalogo_materiales","order=nombre&activo=eq.true"),
       sbGet("inventario","order=referencia"),
       sbGet("facturas","order=created_at.desc"),
-      sbGet("elementos_maestros","order=tipo,referencia"),
+      sbGet("elementos_maestros","order=tipo,referencia&limit=5000"),
     ]);
     APP.data={...APP.data,clientes:a,ots:b,presupuestos:c,catalogo:d,inventario:e,facturas:f,elementos:g};
   }catch(e){toast("Error cargando datos: "+e.message,"err");}
@@ -391,6 +391,7 @@ function renderBottomNav(){
     {id:"ots",label:"OTs",icon:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2" stroke="currentColor" stroke-width="1.8"/>'},
     {id:"clientes",label:"Clientes",icon:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/>'},
     {id:"catalogo",label:"Catálogo",icon:'<path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 014 22V3a1 1 0 011-1h14a1 1 0 011 1v14" stroke="currentColor" stroke-width="1.8"/>'},
+    {id:"elementos",label:"Elementos",icon:'<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" stroke="currentColor" stroke-width="1.8"/>'},
     {id:"config",label:"Config",icon:'<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>'},
   ];
   document.getElementById("bottom-nav-inner").innerHTML=items.map(i=>`
@@ -1225,7 +1226,7 @@ function showCatModal(id=null){
       <div>
         <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:8px">Elementos necesarios</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-          ${CONSUMIBLE_TIPOS.map(t=>`<button class="btn btn-secondary btn-sm" onclick="showElemSelector('${t}')">+ ${t}</button>`).join("")}
+          ${[...new Set(["Tornillería","Tuerca","Arandela","Cable","Brida","Consumible","Adhesivo/Silicona","Otro"].concat([...new Set(APP.data.elementos.map(e=>e.tipo||"Tornillería"))]))].map(t=>`<button class="btn btn-secondary btn-sm" onclick="showElemSelector('${t}')">+ ${t}</button>`).join("")}
         </div>
         <div id="cat-elems-list"></div>
       </div>
@@ -1256,7 +1257,7 @@ function toggleCatFase(faseId){
 }
 
 function showElemSelector(tipo){
-  const elems=APP.data.elementos.filter(e=>e.tipo===tipo);
+  const elems=APP.data.elementos.filter(e=>(e.tipo||"Tornillería")===tipo);
   // If no elements of this type yet, allow creating inline
   const listHtml=elems.length===0
     ?`<div class="empty" style="padding:20px"><div class="empty-icon">📋</div>
