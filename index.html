@@ -354,6 +354,8 @@ function checkPin(){
 
 async function loadApp(){
   renderNav(); renderTopbarUser(); renderBottomNav();
+  // Load anthropic key from Supabase (overrides localStorage if found)
+  await loadAnthropicKey();
   await loadAllData();
   navigate("dashboard");
 }
@@ -700,7 +702,7 @@ function showNewOTModal(){
     <div class="modal-header"><div class="modal-title">Nueva OT</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:14px" onclick="scanHojaForOT()">
-        📄 ${window.innerWidth<700?"Foto de hoja":"Cargar hoja con IA"}
+        📄 Cargar hoja con IA
       </button>
       <div id="scan-ok" style="display:none;font-size:13px;color:var(--green);margin-bottom:10px">✓ Campos cargados desde la hoja</div>
       <div class="form-grid form-grid-2">
@@ -728,7 +730,8 @@ function scanHojaForOT(){
   const key=localStorage.getItem("foima_anthropic_key")||"";
   if(!key){toast("Configura la API key en Configuración","warn");return;}
   const inp=document.getElementById("scan-input");if(!inp)return;
-  if(window.innerWidth<700)inp.setAttribute("capture","environment");else inp.removeAttribute("capture");
+  // No capture attribute - let user choose camera or gallery
+  inp.removeAttribute("capture");
   inp.onchange=async function(e){
     const file=e.target.files[0];if(!file)return;
     toast("Analizando hoja con IA...");
@@ -1180,7 +1183,7 @@ function showCatModal(id=null){
         <div style="flex:1">
           <label class="form-label">Foto del material</label>
           <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:6px" onclick="catFoto()">
-            ${window.innerWidth<700?"📸 Hacer foto":"📁 Cargar foto"}
+            📸 Foto / 📁 Galería
           </button>
           <input class="form-control" id="cat-foto-url" placeholder="o pega URL https://..." value="${v("foto_url")}" oninput="prevCatFoto(this.value)"/>
         </div>
@@ -1214,7 +1217,8 @@ function showCatModal(id=null){
 function prevCatFoto(url){const p=document.getElementById("cat-foto-prev");if(!p)return;p.innerHTML=url?`<img src="${url}" style="width:100%;height:100%;object-fit:cover"/>`:"📦";}
 function catFoto(){
   const inp=document.getElementById("cam-input");if(!inp)return;
-  if(window.innerWidth<700)inp.setAttribute("capture","environment");else inp.removeAttribute("capture");
+  // No capture - user chooses camera or gallery
+  inp.removeAttribute("capture");
   inp.onchange=function(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(ev){document.getElementById("cat-foto-url").value=ev.target.result;prevCatFoto(ev.target.result);};reader.readAsDataURL(file);inp.value="";};
   inp.click();
 }
@@ -1383,7 +1387,29 @@ function renderConfig(){
     <button class="btn btn-secondary" onclick="reloadData()">🔄 Recargar datos</button>
   </div>`;
 }
-function saveCfg(){const key=document.getElementById("cfg-key").value.trim();localStorage.setItem("foima_anthropic_key",key);toast("Configuración guardada ✓");}
+async function saveCfg(){
+  const key=document.getElementById("cfg-key").value.trim();
+  localStorage.setItem("foima_anthropic_key",key);
+  // Also persist to Supabase so it survives on all devices
+  try{
+    const existing=await sbGet("configuracion","clave=eq.anthropic_key");
+    if(existing.length>0){await sbUpd("configuracion",existing[0].id,{valor:key});}
+    else{await sbIns("configuracion",[{clave:"anthropic_key",valor:key}]);}
+    toast("Configuración guardada en todos los dispositivos ✓");
+  }catch{
+    toast("Guardado localmente ✓ (sin sync a BD)");
+  }
+}
+async function loadAnthropicKey(){
+  try{
+    const rows=await sbGet("configuracion","clave=eq.anthropic_key");
+    if(rows.length>0&&rows[0].valor){
+      localStorage.setItem("foima_anthropic_key",rows[0].valor);
+      return rows[0].valor;
+    }
+  }catch{}
+  return localStorage.getItem("foima_anthropic_key")||"";
+}
 async function reloadData(){toast("Recargando...");await loadAllData();toast("Datos actualizados ✓");}
 
 function showUsrModal(id=null){
