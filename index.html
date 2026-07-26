@@ -168,7 +168,7 @@ textarea.form-control{resize:vertical;min-height:80px}
       <div class="login-logo-mark">F</div>
       <div class="login-title">FOIMA CRM</div>
       <div class="login-sub">Control de producción</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px">Build 26/07/2026 08:10</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px">Build 26/07/2026 08:17</div>
     </div>
     <div class="user-selector" id="user-selector"></div>
     <div class="pin-wrap" id="pin-display"></div>
@@ -361,6 +361,22 @@ async function loadApp(){
   await loadAllData();
   navigate("dashboard");
 }
+async function fetchAllElementos(){
+  const all=[];
+  const pageSize=1000;
+  let from=0;
+  while(true){
+    const rows=await fetch(SB_URL+"/rest/v1/elementos_maestros?order=tipo,referencia&limit="+pageSize+"&offset="+from,{
+      headers:{...HDR,"Range-Unit":"items","Range":from+"-"+(from+pageSize-1)}
+    }).then(r=>r.json());
+    if(!Array.isArray(rows)||rows.length===0) break;
+    all.push(...rows);
+    if(rows.length<pageSize) break;
+    from+=pageSize;
+  }
+  return all;
+}
+
 async function loadAllData(){
   try{
     const [a,b,c,d,e,f,g]=await Promise.all([
@@ -370,9 +386,10 @@ async function loadAllData(){
       sbGet("catalogo_materiales","order=nombre&activo=eq.true"),
       sbGet("inventario","order=referencia"),
       sbGet("facturas","order=created_at.desc"),
-      sbGet("elementos_maestros","order=tipo,referencia&limit=5000"),
+      fetchAllElementos(),
     ]);
     APP.data={...APP.data,clientes:a,ots:b,presupuestos:c,catalogo:d,inventario:e,facturas:f,elementos:g};
+    console.log("Elementos cargados:",g.length);
   }catch(e){toast("Error cargando datos: "+e.message,"err");}
 }
 function renderNav(){
