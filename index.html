@@ -701,9 +701,11 @@ function showNewOTModal(){
   openModal(`<div class="overlay"><div class="modal" style="max-width:600px">
     <div class="modal-header"><div class="modal-title">Nueva OT</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
-      <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:14px" onclick="scanHojaForOT()">
-        📄 Cargar hoja con IA
-      </button>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+        <button class="btn btn-secondary" style="justify-content:center;font-size:12px" onclick="scanHojaForOT('camera')">📷 Cámara</button>
+        <button class="btn btn-secondary" style="justify-content:center;font-size:12px" onclick="scanHojaForOT('gallery')">🖼️ Galería</button>
+        <button class="btn btn-secondary" style="justify-content:center;font-size:12px" onclick="scanHojaForOT('pdf')">📄 PDF</button>
+      </div>
       <div id="scan-ok" style="display:none;font-size:13px;color:var(--green);margin-bottom:10px">✓ Campos cargados desde la hoja</div>
       <div class="form-grid form-grid-2">
         <div class="form-group"><label class="form-label">Nº OT *</label><input class="form-control" id="not-num" placeholder="2025-0042"/></div>
@@ -726,19 +728,28 @@ function showNewOTModal(){
   </div></div>`);
 }
 
-function scanHojaForOT(){
+function scanHojaForOT(mode){
   const key=localStorage.getItem("foima_anthropic_key")||"";
   if(!key){toast("Configura la API key en Configuración","warn");return;}
   const inp=document.getElementById("scan-input");if(!inp)return;
-  // No capture attribute - let user choose camera or gallery
-  inp.removeAttribute("capture");
+  if(mode==="camera"){
+    inp.setAttribute("capture","environment");
+    inp.accept="image/*";
+  } else if(mode==="gallery"){
+    inp.removeAttribute("capture");
+    inp.accept="image/*";
+  } else if(mode==="pdf"){
+    inp.removeAttribute("capture");
+    inp.accept="application/pdf";
+  }
   inp.onchange=async function(e){
     const file=e.target.files[0];if(!file)return;
-    toast("Analizando hoja con IA...");
+    toast("Analizando con IA...");
     const reader=new FileReader();
     reader.onload=async function(ev){
       const b64=ev.target.result.split(",")[1];
-      const campos=await analizarHoja(b64,file.type||"image/jpeg");
+      const mime=file.type||"image/jpeg";
+      const campos=await analizarHoja(b64,mime);
       if(campos){
         window._newOTCampos=campos;
         if(campos.otIlave){const m=campos.otIlave.match(/\d{4,}/);if(m)document.getElementById("not-num").value=m[0];}
@@ -1182,9 +1193,11 @@ function showCatModal(id=null){
         </div>
         <div style="flex:1">
           <label class="form-label">Foto del material</label>
-          <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:6px" onclick="catFoto()">
-            📸 Foto / 📁 Galería
-          </button>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
+            <button class="btn btn-secondary btn-sm" style="justify-content:center" onclick="catFoto('camera')">📷 Cámara</button>
+            <button class="btn btn-secondary btn-sm" style="justify-content:center" onclick="catFoto('gallery')">🖼️ Galería</button>
+            <button class="btn btn-secondary btn-sm" style="justify-content:center" onclick="catFoto('pdf')">📄 PDF</button>
+          </div>
           <input class="form-control" id="cat-foto-url" placeholder="o pega URL https://..." value="${v("foto_url")}" oninput="prevCatFoto(this.value)"/>
         </div>
       </div>
@@ -1215,11 +1228,20 @@ function showCatModal(id=null){
 }
 
 function prevCatFoto(url){const p=document.getElementById("cat-foto-prev");if(!p)return;p.innerHTML=url?`<img src="${url}" style="width:100%;height:100%;object-fit:cover"/>`:"📦";}
-function catFoto(){
+function catFoto(mode){
   const inp=document.getElementById("cam-input");if(!inp)return;
-  // No capture - user chooses camera or gallery
-  inp.removeAttribute("capture");
-  inp.onchange=function(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(ev){document.getElementById("cat-foto-url").value=ev.target.result;prevCatFoto(ev.target.result);};reader.readAsDataURL(file);inp.value="";};
+  if(mode==="camera"){inp.setAttribute("capture","environment");inp.accept="image/*";}
+  else if(mode==="gallery"){inp.removeAttribute("capture");inp.accept="image/*";}
+  else if(mode==="pdf"){inp.removeAttribute("capture");inp.accept="application/pdf";}
+  inp.onchange=function(e){
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      document.getElementById("cat-foto-url").value=ev.target.result;
+      prevCatFoto(ev.target.result);
+    };
+    reader.readAsDataURL(file);inp.value="";
+  };
   inp.click();
 }
 function addCatElem(tipo){window._catElems.push({id:Date.now(),tipo,ref:"",desc:"",qty:1});renderCatElems();}
