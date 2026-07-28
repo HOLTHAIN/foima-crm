@@ -168,7 +168,7 @@ textarea.form-control{resize:vertical;min-height:80px}
       <div class="login-logo-mark">F</div>
       <div class="login-title">FOIMA CRM</div>
       <div class="login-sub">Control de producción</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px">Build 28/07/2026 05:43</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px">Build 28/07/2026 06:36</div>
     </div>
     <div class="user-selector" id="user-selector"></div>
     <div class="pin-wrap" id="pin-display"></div>
@@ -1732,6 +1732,8 @@ function renderConfig(){
     <div class="card-title">Base de datos Supabase</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Conectado a ${SB_URL}</div>
     <button class="btn btn-secondary" onclick="reloadData()">🔄 Recargar datos</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="debugFases()">🔍 Debug fases catálogo</button>
+    <div id="debug-out" style="margin-top:10px;font-family:monospace;font-size:11px;background:#0F172A;color:#94A3B8;padding:10px;border-radius:8px;display:none;white-space:pre-wrap;max-height:200px;overflow-y:auto"></div>
   </div>`;
 }
 async function saveCfg(){
@@ -1823,6 +1825,18 @@ const ELEM_ICONS = {
 function elemIcon(key,size){
   const svg=ELEM_ICONS[key]||ELEM_ICONS["hex_z"];
   return `<div style="width:${size||40}px;height:${size||28}px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${svg}</div>`;
+}
+
+// DEBUG
+function debugFases(){
+  const el=document.getElementById("debug-out");
+  el.style.display="block";
+  const cats=APP.data.catalogo;
+  const lines=cats.map(c=>{
+    const f=c.fases;
+    return c.nombre.slice(0,20)+" → tipo:"+(typeof f)+" val:"+JSON.stringify(f);
+  });
+  el.textContent=lines.join("\n")||"Sin materiales en catálogo";
 }
 
 // BOOT
