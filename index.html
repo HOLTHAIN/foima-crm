@@ -168,7 +168,7 @@ textarea.form-control{resize:vertical;min-height:80px}
       <div class="login-logo-mark">F</div>
       <div class="login-title">FOIMA CRM</div>
       <div class="login-sub">Control de producción</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px">Build 28/07/2026 06:42</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px">Build 28/07/2026 07:00</div>
     </div>
     <div class="user-selector" id="user-selector"></div>
     <div class="pin-wrap" id="pin-display"></div>
@@ -771,12 +771,33 @@ function scanHojaForOT(mode){
   }
   inp.onchange=async function(e){
     const file=e.target.files[0];if(!file)return;
-    toast("Analizando con IA...");
+    // Show loading overlay inside modal
+    const modalBody=document.querySelector(".modal-body");
+    const overlay=document.createElement("div");
+    overlay.id="scan-loading";
+    overlay.style.cssText="position:absolute;inset:0;background:rgba(255,255,255,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:var(--radius-lg);z-index:10";
+    overlay.innerHTML=`
+      <div class="spin" style="color:var(--primary)">${svgI('<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="currentColor" stroke-width="2"/>',40)}</div>
+      <div style="font-weight:700;font-size:15px;color:var(--text)">Analizando hoja con IA...</div>
+      <div style="font-size:13px;color:var(--text3);text-align:center;max-width:240px">Claude está leyendo todos los campos de la hoja de pedido</div>
+      <div id="scan-dots" style="font-size:24px;letter-spacing:4px;color:var(--primary)">●○○</div>`;
+    if(modalBody){modalBody.style.position="relative";modalBody.appendChild(overlay);}
+    // Animate dots
+    let dot=0;
+    const dotAnim=setInterval(()=>{
+      dot=(dot+1)%3;
+      const dots=["●○○","○●○","○○●"];
+      const el=document.getElementById("scan-dots");
+      if(el)el.textContent=dots[dot];
+    },400);
+
     const reader=new FileReader();
     reader.onload=async function(ev){
       const b64=ev.target.result.split(",")[1];
       const mime=file.type||"image/jpeg";
       const campos=await analizarHoja(b64,mime);
+      clearInterval(dotAnim);
+      overlay.remove();
       if(campos){
         window._newOTCampos=campos;
         if(campos.otIlave){const m=campos.otIlave.match(/\d{4,}/);if(m)document.getElementById("not-num").value=m[0];}
@@ -786,7 +807,7 @@ function scanHojaForOT(mode){
           if(found)document.getElementById("not-cli").value=found.id;
         }
         const ok=document.getElementById("scan-ok");if(ok)ok.style.display="block";
-        toast("Hoja analizada ✓");
+        toast("✓ Hoja analizada — revisa los campos");
       }
     };
     reader.readAsDataURL(file);inp.value="";
