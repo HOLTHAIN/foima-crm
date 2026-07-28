@@ -168,7 +168,7 @@ textarea.form-control{resize:vertical;min-height:80px}
       <div class="login-logo-mark">F</div>
       <div class="login-title">FOIMA CRM</div>
       <div class="login-sub">Control de producción</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px">Build 28/07/2026 03:34</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px">Build 28/07/2026 05:43</div>
     </div>
     <div class="user-selector" id="user-selector"></div>
     <div class="pin-wrap" id="pin-display"></div>
@@ -388,6 +388,11 @@ async function loadAllData(){
       sbGet("facturas","order=created_at.desc"),
       fetchAllElementos(),
     ]);
+    // Parse fases field (may come as string from Supabase)
+    d.forEach(mat=>{
+      if(typeof mat.fases==="string"){try{mat.fases=JSON.parse(mat.fases);}catch{mat.fases=[];}}
+      if(!Array.isArray(mat.fases))mat.fases=[];
+    });
     APP.data={...APP.data,clientes:a,ots:b,presupuestos:c,catalogo:d,inventario:e,facturas:f,elementos:g};
     console.log("Elementos cargados:",g.length);
   }catch(e){toast("Error cargando datos: "+e.message,"err");}
@@ -915,7 +920,7 @@ function selFaseBtn(btn,otId){
   const q=document.querySelector("#cat-mdl-list")?.previousElementSibling?.value||"";
   const cats=APP.data.catalogo.filter(c=>{
     const f=c.fases||[];
-    const matchFase=f.length===0||f.includes(fid);
+    const matchFase=f.length>0&&f.includes(fid);
     const matchQ=!q||c.nombre.toLowerCase().includes(q.toLowerCase())||c.codigo?.toLowerCase().includes(q.toLowerCase());
     return matchFase&&matchQ;
   });
@@ -923,10 +928,10 @@ function selFaseBtn(btn,otId){
 }
 function filterCatMdl(q,otId){
   const fb=document.querySelector(".fase-sel.btn-primary");const fid=fb?.dataset.fase||"premontaje";
-  // Filter by fase: show materials that have this fase OR have no fases defined
+  // Filter by fase: only show materials explicitly assigned to this fase
   const cats=APP.data.catalogo.filter(c=>{
     const fases=c.fases||[];
-    const matchFase=fases.length===0||fases.includes(fid);
+    const matchFase=fases.length>0&&fases.includes(fid);
     const matchQ=!q||c.nombre.toLowerCase().includes(q.toLowerCase())||c.codigo?.toLowerCase().includes(q.toLowerCase());
     return matchFase&&matchQ;
   });
