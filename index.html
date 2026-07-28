@@ -168,7 +168,7 @@ textarea.form-control{resize:vertical;min-height:80px}
       <div class="login-logo-mark">F</div>
       <div class="login-title">FOIMA CRM</div>
       <div class="login-sub">Control de producción</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px">Build 28/07/2026 06:36</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px">Build 28/07/2026 06:42</div>
     </div>
     <div class="user-selector" id="user-selector"></div>
     <div class="pin-wrap" id="pin-display"></div>
@@ -909,8 +909,14 @@ function showAddMatModal(otId,faseId){
       </div>
       <input class="form-control" placeholder="Buscar material..." oninput="filterCatMdl(this.value,'${otId}')"/>
     </div>
-    <div style="flex:1;overflow-y:auto;padding:12px 20px" id="cat-mdl-list">${renderCatMdlList(APP.data.catalogo,otId,faseId)}</div>
+    <div style="flex:1;overflow-y:auto;padding:12px 20px" id="cat-mdl-list"><div style="text-align:center;padding:20px;color:var(--text3)">Cargando...</div></div>
   </div></div>`);
+  // Filter AFTER modal is in DOM
+  setTimeout(()=>{
+    const cats=APP.data.catalogo.filter(c=>{const f=c.fases||[];return f.length>0&&f.includes(faseId);});
+    const el=document.getElementById("cat-mdl-list");
+    if(el) el.innerHTML=renderCatMdlList(cats,otId,faseId);
+  },0);
 }
 function selFaseBtn(btn,otId){
   document.querySelectorAll(".fase-sel").forEach(b=>{b.className=b.className.replace("btn-primary","btn-secondary");});
