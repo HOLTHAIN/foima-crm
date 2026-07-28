@@ -152,7 +152,7 @@ textarea.form-control{resize:vertical;min-height:80px}
   #main{padding-bottom:64px}
 }
 #bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);z-index:90;padding-bottom:env(safe-area-inset-bottom)}
-.bottom-nav-inner{display:grid;grid-template-columns:repeat(6,1fr);max-width:700px;margin:0 auto}
+.bottom-nav-inner{display:grid;grid-template-columns:repeat(6,1fr);max-width:760px;margin:0 auto}
 .bnav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border:none;background:none;font-size:9px;font-weight:500;color:var(--text3);cursor:pointer;font-family:inherit}
 .bnav-btn.active{color:var(--primary)}
 .bnav-btn svg{width:20px;height:20px}
@@ -166,9 +166,9 @@ textarea.form-control{resize:vertical;min-height:80px}
   <div class="login-box">
     <div class="login-logo">
       <div class="login-logo-mark">F</div>
-      <div class="login-title">FOIMA CRM</div>
+      <div class="login-title" id="login-empresa-nombre">FOIMA CRM</div>
       <div class="login-sub">Control de producción</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px">Build 28/07/2026 07:00</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px">Build 28/07/2026 18:45</div>
     </div>
     <div class="user-selector" id="user-selector"></div>
     <div class="pin-wrap" id="pin-display"></div>
@@ -217,7 +217,44 @@ const sbIns=(t,d)=>sbReq(t,"POST",d);
 const sbUpd=(t,id,d)=>sbReq(t,"PATCH",d,"id=eq."+id);
 const sbDel=(t,id)=>sbReq(t,"DELETE",null,"id=eq."+id);
 
-let APP={user:null,page:"dashboard",data:{clientes:[],ots:[],presupuestos:[],catalogo:[],inventario:[],facturas:[],usuarios:[],elementos:[]},filters:{},params:{}};
+let APP={user:null,page:"dashboard",data:{clientes:[],ots:[],presupuestos:[],catalogo:[],inventario:[],facturas:[],usuarios:[],elementos:[],fichajes:[],incidencias_cat:[],app_config:{}},filters:{},params:{}};
+
+// Config defaults
+const CFG_DEFAULTS={
+  empresa_nombre:"FOIMA",
+  empresa_cif:"",
+  empresa_direccion:"",
+  empresa_telefono:"",
+  empresa_email:"",
+  iva_defecto:21,
+  fases:[
+    {id:"premontaje",label:"Premontaje",color:"#1E40AF",emoji:"🔧"},
+    {id:"hidraulica",label:"Hidráulica",color:"#059669",emoji:"💧"},
+    {id:"electricidad",label:"Electricidad",color:"#D97706",emoji:"⚡"},
+    {id:"acabados",label:"Acabados",color:"#7C3AED",emoji:"✨"},
+  ],
+  ot_estados:[
+    {id:"pendiente",label:"Pendiente",color:"#94A3B8"},
+    {id:"en_curso",label:"En curso",color:"#1E40AF"},
+    {id:"pausada",label:"Pausada",color:"#D97706"},
+    {id:"completada",label:"Completada",color:"#059669"},
+    {id:"entregada",label:"Entregada",color:"#7C3AED"},
+  ],
+  tipos_elemento:["Tornillería","Tuerca","Arandela","Cable","Brida","Consumible","Adhesivo/Silicona","Otro"],
+};
+
+function getCfg(key){
+  const v=APP.data.app_config[key];
+  return v!==undefined?v:CFG_DEFAULTS[key];
+}
+function getPHASES(){ return getCfg("fases")||CFG_DEFAULTS.fases; }
+function getOT_ESTADOS(){ 
+  const arr=getCfg("ot_estados")||CFG_DEFAULTS.ot_estados;
+  const map={};
+  arr.forEach(e=>{map[e.id]={label:e.label,cls:"badge-gray",color:e.color};});
+  return map;
+}
+function getTIPOS(){ return getCfg("tipos_elemento")||CFG_DEFAULTS.tipos_elemento; }
 
 const PHASES=[
   {id:"premontaje",label:"Premontaje",color:"#1E40AF"},
@@ -258,6 +295,9 @@ const NAV=[
   {id:"catalogo",label:"Catálogo",icon:'<path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 014 22V3a1 1 0 011-1h14a1 1 0 011 1v14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'},
   {id:"inventario",label:"Inventario",icon:'<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="currentColor" stroke-width="1.8"/>'},
   {id:"elementos",label:"Elementos",icon:'<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="currentColor" stroke-width="1.8"/>'},
+  {section:"Producción 2"},
+  {id:"fichar",label:"Fichar",icon:'<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'},
+  {id:"fichajes",label:"Fichajes",icon:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'},
   {section:"Análisis"},
   {id:"informes",label:"Estadísticas",icon:'<line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="20" x2="12" y2="4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="6" y1="20" x2="6" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'},
   {section:"Sistema"},
@@ -356,9 +396,12 @@ function checkPin(){
 
 async function loadApp(){
   renderNav(); renderTopbarUser(); renderBottomNav();
-  // Load anthropic key from Supabase (overrides localStorage if found)
   await loadAnthropicKey();
   await loadAllData();
+  // Apply empresa name
+  const nombre=getCfg("empresa_nombre")||"FOIMA CRM";
+  document.querySelector(".sidebar-logo-text")&&(document.querySelector(".sidebar-logo-text").textContent=nombre+" CRM");
+  document.title=nombre+" CRM";
   navigate("dashboard");
 }
 async function fetchAllElementos(){
@@ -379,7 +422,7 @@ async function fetchAllElementos(){
 
 async function loadAllData(){
   try{
-    const [a,b,c,d,e,f,g]=await Promise.all([
+    const [a,b,c,d,e,f,g,h,ic,cfgRows]=await Promise.all([
       sbGet("clientes","order=nombre"),
       sbGet("ots","order=created_at.desc"),
       sbGet("presupuestos","order=created_at.desc"),
@@ -387,13 +430,19 @@ async function loadAllData(){
       sbGet("inventario","order=referencia"),
       sbGet("facturas","order=created_at.desc"),
       fetchAllElementos(),
+      sbGet("fichajes","order=timestamp.desc&limit=500"),
+      sbGet("incidencias_cat","order=nombre"),
+      sbGet("configuracion_app",""),
     ]);
     // Parse fases field (may come as string from Supabase)
     d.forEach(mat=>{
       if(typeof mat.fases==="string"){try{mat.fases=JSON.parse(mat.fases);}catch{mat.fases=[];}}
       if(!Array.isArray(mat.fases))mat.fases=[];
     });
-    APP.data={...APP.data,clientes:a,ots:b,presupuestos:c,catalogo:d,inventario:e,facturas:f,elementos:g};
+    // Build config map from rows
+    const cfgMap={};
+    (cfgRows||[]).forEach(r=>{try{cfgMap[r.clave]=r.valor;}catch{}});
+    APP.data={...APP.data,clientes:a,ots:b,presupuestos:c,catalogo:d,inventario:e,facturas:f,elementos:g,fichajes:h||[],incidencias_cat:ic||[],app_config:cfgMap};
     console.log("Elementos cargados:",g.length);
   }catch(e){toast("Error cargando datos: "+e.message,"err");}
 }
@@ -413,6 +462,7 @@ function renderBottomNav(){
     {id:"ots",label:"OTs",icon:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2" stroke="currentColor" stroke-width="1.8"/>'},
     {id:"clientes",label:"Clientes",icon:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/>'},
     {id:"catalogo",label:"Catálogo",icon:'<path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 014 22V3a1 1 0 011-1h14a1 1 0 011 1v14" stroke="currentColor" stroke-width="1.8"/>'},
+    {id:"fichar",label:"Fichar",icon:'<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'},
     {id:"elementos",label:"Elementos",icon:'<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" stroke="currentColor" stroke-width="1.8"/>'},
     {id:"config",label:"Config",icon:'<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>'},
   ];
@@ -464,6 +514,8 @@ function navigate(page,params={}){
         case "catalogo":renderCatalogo();break;
         case "inventario":renderInventario();break;
         case "elementos":renderElementos();break;
+        case "fichar":renderFichar();break;
+        case "fichajes":renderFichajes();break;
         case "informes":renderInformes();break;
         case "config":renderConfig();break;
         default:c.innerHTML=`<div class="empty"><div class="empty-icon">🚧</div><div class="empty-title">En construcción</div></div>`;
@@ -1294,7 +1346,7 @@ function showCatModal(id=null){
       <div>
         <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:8px">Elementos necesarios</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-          ${[...new Set(["Tornillería","Tuerca","Arandela","Cable","Brida","Consumible","Adhesivo/Silicona","Otro"].concat([...new Set(APP.data.elementos.map(e=>e.tipo||"Tornillería"))]))].map(t=>`<button class="btn btn-secondary btn-sm" onclick="showElemSelector('${t}')">+ ${t}</button>`).join("")}
+          ${[...new Set(getTIPOS().concat([...new Set(APP.data.elementos.map(e=>e.tipo||"Tornillería"))]))].map(t=>`<button class="btn btn-secondary btn-sm" onclick="showElemSelector('${t}')">+ ${t}</button>`).join("")}
         </div>
         <div id="cat-elems-list"></div>
       </div>
@@ -1692,6 +1744,346 @@ async function delElem(id){
   });
 }
 
+// FICHAR
+const FICH_STATE = {step:0, ot:null, usuario:null, fase:null}; // steps: 0=OT, 1=usuario, 2=fase, 3=accion
+
+function renderFichar(){
+  // Reset state on nav
+  FICH_STATE.step=0; FICH_STATE.ot=null; FICH_STATE.usuario=null; FICH_STATE.fase=null;
+  renderFicharStep();
+}
+
+function renderFicharStep(){
+  const s=FICH_STATE;
+  const c=document.getElementById("content");
+
+  // Step indicators
+  const steps=["OT","Trabajador","Fase","Acción"];
+  const stepsHtml=`<div style="display:flex;gap:0;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1px solid var(--border)">
+    ${steps.map((st,i)=>`<div style="flex:1;padding:8px 4px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;
+      background:${i<s.step?"var(--green-light)":i===s.step?"var(--primary)":"var(--bg)"};
+      color:${i<s.step?"var(--green)":i===s.step?"#fff":"var(--text3)"}">
+      ${i<s.step?"✓ ":""}${st}</div>`).join("")}
+  </div>`;
+
+  if(s.step===0){
+    // STEP 0: Scan/type OT
+    c.innerHTML=`
+    <div class="page-header"><div class="page-title">Fichar</div></div>
+    ${stepsHtml}
+    <div class="card">
+      <div class="card-title">Escanea o introduce el número de OT</div>
+      <input class="form-control" id="fich-input" type="text" inputmode="numeric"
+        placeholder="Número de OT..." autofocus
+        style="font-size:24px;text-align:center;letter-spacing:4px;padding:16px"
+        onkeydown="if(event.key==='Enter')confirmarOT()"/>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px;padding:14px;font-size:16px;justify-content:center" onclick="confirmarOT()">
+        Confirmar OT →
+      </button>
+    </div>`;
+    setTimeout(()=>document.getElementById("fich-input")?.focus(),100);
+
+  } else if(s.step===1){
+    // STEP 1: Scan/type worker code
+    c.innerHTML=`
+    <div class="page-header"><div class="page-title">Fichar</div></div>
+    ${stepsHtml}
+    <div class="card" style="border-left:3px solid var(--green)">
+      <div style="font-size:12px;color:var(--text3)">OT seleccionada</div>
+      <div style="font-weight:700;font-size:16px">OT-${s.ot.numero}</div>
+      <div style="font-size:13px;color:var(--text2)">${s.ot.descripcion||s.ot.campos_hoja?.cliente||""}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Escanea o introduce tu código de trabajador</div>
+      <input class="form-control" id="fich-input" type="text" inputmode="numeric"
+        placeholder="Código trabajador..." autofocus
+        style="font-size:24px;text-align:center;letter-spacing:4px;padding:16px"
+        onkeydown="if(event.key==='Enter')confirmarTrabajador()"/>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px;padding:14px;font-size:16px;justify-content:center" onclick="confirmarTrabajador()">
+        Confirmar →
+      </button>
+      <button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center" onclick="FICH_STATE.step=0;renderFicharStep()">← Volver</button>
+    </div>`;
+    setTimeout(()=>document.getElementById("fich-input")?.focus(),100);
+
+  } else if(s.step===2){
+    // STEP 2: Select fase
+    c.innerHTML=`
+    <div class="page-header"><div class="page-title">Fichar</div></div>
+    ${stepsHtml}
+    <div class="card" style="border-left:3px solid var(--green)">
+      <div style="font-size:12px;color:var(--text3)">OT · Trabajador</div>
+      <div style="font-weight:700;font-size:15px">OT-${s.ot.numero} · ${s.usuario.nombre}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Selecciona la fase</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        ${getPHASES().map(p=>`<button class="btn btn-secondary" style="padding:18px;justify-content:center;flex-direction:column;gap:6px;font-size:14px"
+          onclick="confirmarFase('${p.id}')">
+          <span style="font-size:22px">${p.emoji||"⚙️"}</span>
+          ${p.label}
+        </button>`).join("")}
+      </div>
+      <button class="btn btn-ghost" style="width:100%;margin-top:10px;justify-content:center" onclick="FICH_STATE.step=1;renderFicharStep()">← Volver</button>
+    </div>`;
+
+  } else if(s.step===3){
+    // STEP 3: Action buttons
+    // Check current state for this user
+    const misFichajes=APP.data.fichajes.filter(f=>f.usuario_id===s.usuario.id);
+    const ultimo=misFichajes[0];
+    const enTrabajo=ultimo&&(ultimo.tipo==="entrada"||ultimo.tipo==="pausa_fin");
+    const enPausa=ultimo&&ultimo.tipo==="pausa_inicio";
+    const enIncidencia=ultimo&&ultimo.tipo==="incidencia_inicio";
+    const tieneAbierto=enTrabajo||enPausa||enIncidencia;
+
+    c.innerHTML=`
+    <div class="page-header"><div class="page-title">Fichar</div></div>
+    ${stepsHtml}
+    <div class="card" style="border-left:3px solid ${enTrabajo?"var(--green)":enPausa?"var(--amber)":enIncidencia?"var(--red)":"var(--border)"}">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:32px">${enTrabajo?"🟢":enPausa?"🟡":enIncidencia?"🔴":"⚪"}</div>
+        <div>
+          <div style="font-weight:700;font-size:15px">${s.usuario.nombre}</div>
+          <div style="font-size:13px;color:var(--text2)">OT-${s.ot.numero} · ${PHASES.find(p=>p.id===s.fase)?.label||s.fase}</div>
+          <div style="font-size:12px;color:var(--text3)">${enTrabajo?"Trabajando":enPausa?"En pausa":enIncidencia?"Incidencia abierta":"Sin fichar entrada"}</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      ${!tieneAbierto?`<button class="btn btn-green" style="grid-column:1/-1;padding:18px;justify-content:center;flex-direction:column;gap:4px;font-size:16px" onclick="accionFichar('entrada')">
+        <span style="font-size:28px">▶</span> Entrada
+      </button>`:""}
+      ${enTrabajo||enPausa?`
+      <button class="btn btn-secondary" style="padding:16px;justify-content:center;flex-direction:column;gap:4px;border-color:var(--amber);color:var(--amber)" onclick="accionFichar('pausa_inicio')" ${enPausa?"disabled":""}>
+        <span style="font-size:24px">⏸</span> ${enPausa?"En pausa":"Pausa"}
+      </button>
+      <button class="btn btn-secondary" style="padding:16px;justify-content:center;flex-direction:column;gap:4px;border-color:var(--green);color:var(--green)" onclick="accionFichar('pausa_fin')" ${enTrabajo?"disabled":""}>
+        <span style="font-size:24px">▶▶</span> ${enTrabajo?"Trabajando":"Fin pausa"}
+      </button>
+      <button class="btn btn-red" style="grid-column:1/-1;padding:16px;justify-content:center;flex-direction:column;gap:4px;font-size:15px" onclick="accionFichar('salida')">
+        <span style="font-size:24px">⏹</span> Salida
+      </button>`:""}
+      ${enIncidencia?`<button class="btn btn-red" style="grid-column:1/-1;padding:16px;justify-content:center;font-size:15px" onclick="accionFichar('incidencia_fin')">
+        ✅ Cerrar incidencia
+      </button>`:""}
+    </div>
+    ${!enIncidencia?`<button class="btn btn-secondary" style="width:100%;justify-content:center;border-color:var(--red);color:var(--red)" onclick="showIncidenciaModal()">
+      ⚠️ Abrir incidencia
+    </button>`:""}
+    <button class="btn btn-ghost" style="width:100%;margin-top:8px;justify-content:center" onclick="FICH_STATE.step=0;renderFicharStep()">← Nueva sesión</button>`;
+  }
+}
+
+function confirmarOT(){
+  const val=document.getElementById("fich-input")?.value.trim();
+  if(!val){toast("Introduce el número de OT","warn");return;}
+  // Search by numero
+  const ot=APP.data.ots.find(o=>o.numero===val||o.numero===val.replace(/^0+/,""));
+  if(!ot){toast("OT-"+val+" no encontrada","err");return;}
+  FICH_STATE.ot=ot; FICH_STATE.step=1; renderFicharStep();
+}
+
+function confirmarTrabajador(){
+  const val=document.getElementById("fich-input")?.value.trim();
+  if(!val){toast("Introduce tu código","warn");return;}
+  // Match by PIN
+  const user=APP.data.usuarios.find(u=>u.pin===val);
+  if(!user){toast("Código de trabajador no válido","err");return;}
+  FICH_STATE.usuario=user; FICH_STATE.step=2; renderFicharStep();
+}
+
+function confirmarFase(faseId){
+  FICH_STATE.fase=faseId; FICH_STATE.step=3; renderFicharStep();
+}
+
+async function accionFichar(tipo){
+  const s=FICH_STATE;
+  const data={
+    usuario_id:s.usuario.id, usuario_nombre:s.usuario.nombre,
+    ot_id:s.ot.id, ot_numero:s.ot.numero, fase:s.fase,
+    tipo, timestamp:new Date().toISOString(),
+  };
+  try{
+    const[f]=await sbIns("fichajes",[data]);
+    APP.data.fichajes.unshift(f);
+    const labels={entrada:"▶ Entrada registrada",salida:"⏹ Salida registrada",pausa_inicio:"⏸ Pausa iniciada",pausa_fin:"▶▶ Pausa finalizada",incidencia_fin:"✅ Incidencia cerrada"};
+    toast(labels[tipo]||"Fichaje registrado ✓");
+    renderFicharStep();
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+
+function showIncidenciaModal(){
+  const cats=APP.data.incidencias_cat;
+  openModal(`<div class="overlay"><div class="modal" style="max-width:400px">
+    <div class="modal-header"><div class="modal-title">⚠️ Abrir incidencia</div><button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Categoría *</label>
+        <div style="display:grid;gap:8px">
+          ${cats.length===0?`<div style="color:var(--text3);font-size:13px">Sin categorías. Añade categorías en Configuración.</div>`:
+          cats.map(cat=>`<button class="btn btn-secondary" style="justify-content:flex-start;text-align:left" onclick="abrirIncidencia('${cat.id}','${cat.nombre.replace(/'/g,"\'")}')">
+            ${cat.emoji||"⚠️"} ${cat.nombre}
+          </button>`).join("")}
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:8px"><label class="form-label">Notas adicionales (opcional)</label>
+        <textarea class="form-control" id="inc-notas" rows="3" placeholder="Describe la incidencia..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button></div>
+  </div></div>`);
+}
+
+async function abrirIncidencia(catId,catNombre){
+  const s=FICH_STATE;
+  const notas=document.getElementById("inc-notas")?.value||"";
+  const data={
+    usuario_id:s.usuario.id, usuario_nombre:s.usuario.nombre,
+    ot_id:s.ot.id, ot_numero:s.ot.numero, fase:s.fase,
+    tipo:"incidencia_inicio", notas:catNombre+(notas?" — "+notas:""),
+    timestamp:new Date().toISOString(),
+  };
+  try{
+    const[f]=await sbIns("fichajes",[data]);
+    APP.data.fichajes.unshift(f);
+    closeModal(); toast("⚠️ Incidencia abierta: "+catNombre);
+    renderFicharStep();
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+
+
+function selFichFase(btn){
+  document.querySelectorAll(".fich-fase-btn").forEach(b=>{
+    b.className=b.className.replace("btn-primary","btn-secondary");
+    b.style.borderColor="";b.style.color="";
+  });
+  btn.className=btn.className.replace("btn-secondary","btn-primary");
+}
+
+function updFichFase(){} // placeholder
+
+async function registrarFichaje(tipo){
+  const otSel=document.getElementById("fich-ot");
+  const faseBtn=document.querySelector(".fich-fase-btn.btn-primary");
+  const otId=otSel?.value||null;
+  const otNum=otSel?.options[otSel.selectedIndex]?.dataset?.num||null;
+  const fase=faseBtn?.dataset?.fase||null;
+
+  if(!otId){toast("Selecciona una OT primero","warn");return;}
+  if(!fase){toast("Selecciona una fase primero","warn");return;}
+
+  const data={
+    usuario_id:APP.user.id,
+    usuario_nombre:APP.user.nombre,
+    ot_id:otId,
+    ot_numero:otNum,
+    fase,tipo,
+    timestamp:new Date().toISOString(),
+  };
+
+  try{
+    const[f]=await sbIns("fichajes",[data]);
+    APP.data.fichajes.unshift(f);
+    const labels={entrada:"Entrada registrada ✓",salida:"Salida registrada ✓",pausa_inicio:"Pausa iniciada ✓",pausa_fin:"Pausa finalizada ✓"};
+    toast(labels[tipo]||"Fichaje registrado ✓");
+    renderFichar();
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+
+// showIncidenciaModal and guardarIncidencia moved to new flow
+
+// FICHAJES ADMIN
+function renderFichajes(){
+  if(!isAdmin()){navigate("fichar");return;}
+  const {fichajes,usuarios}=APP.data;
+  const filtUser=APP.filters.fichUser||"todos";
+  const filtFecha=APP.filters.fichFecha||new Date().toISOString().slice(0,10);
+  const filtered=fichajes.filter(f=>{
+    const matchUser=filtUser==="todos"||f.usuario_id===filtUser;
+    const matchFecha=!filtFecha||new Date(f.timestamp).toISOString().slice(0,10)===filtFecha;
+    return matchUser&&matchFecha;
+  });
+
+  // Calcular tiempo trabajado por usuario
+  const tiempos={};
+  filtered.forEach(f=>{
+    if(!tiempos[f.usuario_nombre])tiempos[f.usuario_nombre]={entrada:null,total:0,pausas:0};
+    const t=tiempos[f.usuario_nombre];
+    if(f.tipo==="entrada")t.entrada=new Date(f.timestamp);
+    if(f.tipo==="salida"&&t.entrada){t.total+=new Date(f.timestamp)-t.entrada;t.entrada=null;}
+  });
+
+  function fmtDur(ms){if(!ms)return"—";const h=Math.floor(ms/3600000);const m=Math.floor((ms%3600000)/60000);return h>0?`${h}h ${m}m`:`${m}m`;}
+
+  document.getElementById("content").innerHTML=`
+  <div class="page-header">
+    <div><div class="page-title">Fichajes</div></div>
+    <button class="btn btn-secondary btn-sm" onclick="exportFichajes()">📥 Exportar</button>
+  </div>
+
+  <!-- Filtros -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+    <select class="form-control" style="width:auto" onchange="APP.filters.fichUser=this.value;renderFichajes()">
+      <option value="todos">Todos los operarios</option>
+      ${usuarios.map(u=>`<option value="${u.id}" ${filtUser===u.id?"selected":""}>${u.nombre}</option>`).join("")}
+    </select>
+    <input type="date" class="form-control" style="width:auto" value="${filtFecha}"
+      onchange="APP.filters.fichFecha=this.value;renderFichajes()"/>
+  </div>
+
+  <!-- Resumen tiempos -->
+  ${Object.keys(tiempos).length>0?`<div class="stats-grid" style="margin-bottom:14px">
+    ${Object.entries(tiempos).map(([nombre,t])=>`
+      <div class="stat-card" style="border-color:var(--green)">
+        <div style="font-weight:700">${nombre}</div>
+        <div class="stat-num" style="font-size:20px;color:var(--green)">${fmtDur(t.total)}</div>
+        <div class="stat-label">tiempo trabajado</div>
+        ${t.entrada?`<div style="font-size:11px;color:var(--amber);margin-top:4px">⚠️ Sin fichar salida</div>`:""}
+      </div>`).join("")}
+  </div>`:""}
+
+  <!-- Tabla fichajes -->
+  <div class="table-wrap"><table><thead><tr>
+    <th>Hora</th><th>Operario</th><th>Tipo</th><th>OT</th><th>Fase</th><th>Notas</th>
+  </tr></thead><tbody>
+  ${filtered.length===0?`<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">Sin fichajes para los filtros seleccionados</td></tr>`:
+  filtered.map(f=>{
+    const hora=new Date(f.timestamp).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});
+    const iconos={entrada:"▶ Entrada",salida:"⏹ Salida",pausa_inicio:"⏸ Pausa",pausa_fin:"▶▶ Fin pausa",incidencia_inicio:"⚠️ Incidencia abierta",incidencia_fin:"✅ Incidencia cerrada"};
+    const colores={entrada:"var(--green)",salida:"var(--red)",pausa_inicio:"var(--amber)",pausa_fin:"var(--green)",incidencia_inicio:"var(--red)",incidencia_fin:"var(--green)"};
+    return `<tr>
+      <td style="font-family:monospace;font-weight:700">${hora}</td>
+      <td>${f.usuario_nombre||"—"}</td>
+      <td style="color:${colores[f.tipo]||"inherit"};font-weight:600">${iconos[f.tipo]||f.tipo}</td>
+      <td>${f.ot_numero?"OT-"+f.ot_numero:"—"}</td>
+      <td>${f.fase?PHASES.find(p=>p.id===f.fase)?.label||f.fase:"—"}</td>
+      <td style="font-size:12px;color:var(--text3)">${f.notas||"—"}</td>
+    </tr>`;}).join("")}
+  </tbody></table></div>`;
+}
+
+function exportFichajes(){
+  const {fichajes}=APP.data;
+  const filtFecha=APP.filters.fichFecha||new Date().toISOString().slice(0,10);
+  const filtered=fichajes.filter(f=>new Date(f.timestamp).toISOString().slice(0,10)===filtFecha);
+  const csv=["Fecha,Hora,Operario,Tipo,OT,Fase,Notas",
+    ...filtered.map(f=>[
+      new Date(f.timestamp).toLocaleDateString("es-ES"),
+      new Date(f.timestamp).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}),
+      f.usuario_nombre||"",
+      f.tipo,
+      f.ot_numero?"OT-"+f.ot_numero:"",
+      f.fase?PHASES.find(p=>p.id===f.fase)?.label||f.fase:"",
+      f.notas||""
+    ].join(","))
+  ].join("\n");
+  const a=document.createElement("a");
+  a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+  a.download="fichajes_"+filtFecha+".csv";
+  a.click();
+  toast("CSV exportado ✓");
+}
+
 // INFORMES
 function renderInformes(){
   const {ots,facturas,clientes}=APP.data;
@@ -1732,8 +2124,81 @@ function renderInformes(){
 // CONFIG
 function renderConfig(){
   const key=localStorage.getItem("foima_anthropic_key")||"";
+  const cfg=APP.data.app_config;
+  const fases=getPHASES();
+  const otEst=getCfg("ot_estados")||CFG_DEFAULTS.ot_estados;
+  const tipos=getTIPOS();
   document.getElementById("content").innerHTML=`
   <div class="page-header"><div class="page-title">Configuración</div></div>
+
+  <!-- EMPRESA -->
+  <div class="card">
+    <div class="card-title">Datos de empresa</div>
+    <div class="form-grid form-grid-2">
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Nombre empresa</label>
+        <input class="form-control" id="cfg-empresa" value="${getCfg('empresa_nombre')||'FOIMA'}"/></div>
+      <div class="form-group"><label class="form-label">CIF/NIF</label>
+        <input class="form-control" id="cfg-cif" value="${getCfg('empresa_cif')||''}"/></div>
+      <div class="form-group"><label class="form-label">Teléfono</label>
+        <input class="form-control" id="cfg-tel" value="${getCfg('empresa_telefono')||''}"/></div>
+      <div class="form-group"><label class="form-label">Email</label>
+        <input class="form-control" id="cfg-email" value="${getCfg('empresa_email')||''}"/></div>
+      <div class="form-group"><label class="form-label">IVA por defecto (%)</label>
+        <input class="form-control" type="number" id="cfg-iva" value="${getCfg('iva_defecto')||21}"/></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Dirección</label>
+        <input class="form-control" id="cfg-dir" value="${getCfg('empresa_direccion')||''}"/></div>
+    </div>
+    <button class="btn btn-primary" onclick="saveCfgEmpresa()">Guardar datos empresa</button>
+  </div>
+
+  <!-- FASES -->
+  ${isAdmin()?`<div class="card">
+    <div class="card-title">Fases de producción</div>
+    <div id="cfg-fases-list">
+      ${fases.map((f,i)=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input class="form-control" style="width:44px;text-align:center" value="${f.emoji||'⚙️'}" id="fase-emoji-${i}"/>
+          <input class="form-control" style="flex:1" value="${f.label}" id="fase-label-${i}"/>
+          <input type="color" value="${f.color||'#1E40AF'}" id="fase-color-${i}" style="width:40px;height:38px;border:1px solid var(--border);border-radius:8px;cursor:pointer;padding:2px"/>
+          <button class="btn btn-ghost btn-icon btn-sm" style="color:var(--red)" onclick="delFase(${i})">🗑️</button>
+        </div>`).join("")}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input class="form-control" id="new-fase-emoji" placeholder="⚙️" style="width:52px;text-align:center"/>
+      <input class="form-control" id="new-fase-label" placeholder="Nueva fase..."/>
+      <input type="color" id="new-fase-color" value="#6B7280" style="width:44px;height:38px;border:1px solid var(--border);border-radius:8px;cursor:pointer;padding:2px"/>
+      <button class="btn btn-primary btn-sm" onclick="addFase()">+</button>
+    </div>
+    <button class="btn btn-primary" style="margin-top:10px" onclick="saveFases()">Guardar fases</button>
+  </div>`:""}
+
+  <!-- ESTADOS OT -->
+  ${isAdmin()?`<div class="card">
+    <div class="card-title">Estados de OT</div>
+    ${otEst.map((e,i)=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <input class="form-control" style="flex:1" value="${e.label}" id="otest-label-${i}"/>
+        <input type="color" value="${e.color||'#94A3B8'}" id="otest-color-${i}" style="width:40px;height:38px;border:1px solid var(--border);border-radius:8px;cursor:pointer;padding:2px"/>
+      </div>`).join("")}
+    <button class="btn btn-primary" style="margin-top:10px" onclick="saveOtEstados()">Guardar estados</button>
+  </div>`:""}
+
+  <!-- TIPOS ELEMENTO -->
+  ${isAdmin()?`<div class="card">
+    <div class="card-title">Tipos de elemento</div>
+    <div id="cfg-tipos-list">
+      ${tipos.map((t,i)=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="flex:1;font-size:13px">${t}</span>
+          <button class="btn btn-ghost btn-icon btn-sm" style="color:var(--red)" onclick="delTipo(${i})">🗑️</button>
+        </div>`).join("")}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input class="form-control" id="new-tipo" placeholder="Nuevo tipo..."/>
+      <button class="btn btn-primary btn-sm" onclick="addTipo()">+</button>
+    </div>
+  </div>`:""}
+
   <div class="card">
     <div class="card-title">API de Anthropic (escáner de hojas)</div>
     <div class="form-group">
@@ -1744,6 +2209,22 @@ function renderConfig(){
     <button class="btn btn-primary" onclick="saveCfg()">Guardar configuración</button>
   </div>
   ${isAdmin()?`<div class="card">
+    <div class="card-title">Categorías de incidencia</div>
+    <div id="inc-cat-list">
+      ${APP.data.incidencias_cat.map(c=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:20px">${c.emoji||"⚠️"}</span>
+          <span style="flex:1;font-weight:500">${c.nombre}</span>
+          <button class="btn btn-ghost btn-icon btn-sm" style="color:var(--red)" onclick="delIncCat('${c.id}')">🗑️</button>
+        </div>`).join("")||'<div style="color:var(--text3);font-size:13px;padding:8px 0">Sin categorías</div>'}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input class="form-control" id="inc-cat-emoji" placeholder="⚠️" style="width:60px;text-align:center"/>
+      <input class="form-control" id="inc-cat-nombre" placeholder="Nombre categoría"/>
+      <button class="btn btn-primary btn-sm" onclick="addIncCat()">+</button>
+    </div>
+  </div>
+  <div class="card">
     <div class="card-title">Usuarios</div>
     <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>PIN</th><th>Rol</th><th></th></tr></thead><tbody>
     ${APP.data.usuarios.map(u=>`<tr>
@@ -1787,6 +2268,27 @@ async function loadAnthropicKey(){
   return localStorage.getItem("foima_anthropic_key")||"";
 }
 async function reloadData(){toast("Recargando...");await loadAllData();toast("Datos actualizados ✓");}
+
+async function addIncCat(){
+  const emoji=document.getElementById("inc-cat-emoji")?.value.trim()||"⚠️";
+  const nombre=document.getElementById("inc-cat-nombre")?.value.trim();
+  if(!nombre){toast("Introduce un nombre","warn");return;}
+  try{
+    const[n]=await sbIns("incidencias_cat",[{nombre,emoji}]);
+    APP.data.incidencias_cat.push(n);
+    toast("Categoría añadida ✓"); renderConfig();
+  }catch(e){toast("Error: "+e.message,"err");}
+}
+
+async function delIncCat(id){
+  confirm2("¿Eliminar esta categoría?",async()=>{
+    try{
+      await sbDel("incidencias_cat",id);
+      APP.data.incidencias_cat=APP.data.incidencias_cat.filter(c=>c.id!==id);
+      toast("Eliminada"); renderConfig();
+    }catch(e){toast("Error","err");}
+  });
+}
 
 function showUsrModal(id=null){
   const u=id?APP.data.usuarios.find(x=>x.id===id):{};
